@@ -7,15 +7,16 @@ const PONTOS = {
   curtida: 2, // cada curtida recebida de outra pessoa
 };
 
-// Conquistas automáticas: quando a condição é atingida, o aluno ganha o bônus.
+// Conquistas automáticas: quando o aluno chega na meta, ganha o bônus.
+// conta = o que é contado (posts, comentarios, curtidas ou medalhas); meta = quanto precisa.
 const CONQUISTAS = [
-  { id: 'primeiro_post', emoji: '📸', nome: 'Primeiro clique', descricao: 'Publicou o primeiro post', bonus: 20, atingiu: (s) => s.posts >= 1 },
-  { id: 'fotografo', emoji: '🎞️', nome: 'Fotógrafo do campus', descricao: 'Publicou 10 posts', bonus: 50, atingiu: (s) => s.posts >= 10 },
-  { id: 'bom_de_papo', emoji: '💬', nome: 'Bom de papo', descricao: 'Comentou em 10 posts de colegas', bonus: 30, atingiu: (s) => s.comentarios >= 10 },
-  { id: 'popular', emoji: '❤️', nome: 'Popular', descricao: 'Recebeu 50 curtidas', bonus: 50, atingiu: (s) => s.curtidas >= 50 },
-  { id: 'estrela', emoji: '🌟', nome: 'Estrela da UniMax', descricao: 'Recebeu 200 curtidas', bonus: 100, atingiu: (s) => s.curtidas >= 200 },
-  { id: 'medalhista', emoji: '🏅', nome: 'Medalhista', descricao: 'Ganhou a primeira medalha de um professor', bonus: 20, atingiu: (s) => s.medalhas >= 1 },
-  { id: 'colecionador', emoji: '🏆', nome: 'Colecionador', descricao: 'Ganhou 5 medalhas de professores', bonus: 60, atingiu: (s) => s.medalhas >= 5 },
+  { id: 'primeiro_post', emoji: '📸', nome: 'Primeiro clique', descricao: 'Publicou o primeiro post', bonus: 20, conta: 'posts', meta: 1 },
+  { id: 'fotografo', emoji: '🎞️', nome: 'Fotógrafo do campus', descricao: 'Publicou 10 posts', bonus: 50, conta: 'posts', meta: 10 },
+  { id: 'bom_de_papo', emoji: '💬', nome: 'Bom de papo', descricao: 'Comentou em 10 posts de colegas', bonus: 30, conta: 'comentarios', meta: 10 },
+  { id: 'popular', emoji: '❤️', nome: 'Popular', descricao: 'Recebeu 50 curtidas', bonus: 50, conta: 'curtidas', meta: 50 },
+  { id: 'estrela', emoji: '🌟', nome: 'Estrela da UniMax', descricao: 'Recebeu 200 curtidas', bonus: 100, conta: 'curtidas', meta: 200 },
+  { id: 'medalhista', emoji: '🏅', nome: 'Medalhista', descricao: 'Ganhou a primeira medalha de um professor', bonus: 20, conta: 'medalhas', meta: 1 },
+  { id: 'colecionador', emoji: '🏆', nome: 'Colecionador', descricao: 'Ganhou 5 medalhas de professores', bonus: 60, conta: 'medalhas', meta: 5 },
 ];
 
 // Medalhas que os professores podem dar (criadas no banco na primeira execução).

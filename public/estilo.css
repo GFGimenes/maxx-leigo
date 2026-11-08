@@ -203,8 +203,6 @@ details > summary { cursor: pointer; color: var(--primaria); font-size: .9rem; }
 .extrato td { padding: .3rem 0; border-bottom: 1px solid var(--borda); }
 .extrato td:last-child { text-align: right; white-space: nowrap; }
 .extrato .total td { border-bottom: 0; font-weight: 700; }
-.faltam { margin-top: 1rem; }
-.faltam .conquistas { margin-top: .6rem; }
 
 .conquistas { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: .6rem; }
 .conquistas li { display: grid; justify-items: center; text-align: center; gap: .15rem; padding: .7rem .4rem; border-radius: 12px; border: 1px solid var(--borda); }
@@ -212,7 +210,6 @@ details > summary { cursor: pointer; color: var(--primaria); font-size: .9rem; }
 .conquistas small { color: var(--muted); font-size: .72rem; }
 .conquistas .pts { font-size: .75rem; }
 .conquistas .ganhou { background: var(--primaria-suave); border-color: var(--primaria); }
-.conquistas .bloqueada { opacity: .45; filter: grayscale(1); }
 
 .medalhas { list-style: none; padding: 0; margin: 0; display: grid; gap: .8rem; }
 .medalhas li { display: flex; gap: .7rem; }
@@ -265,3 +262,43 @@ details > summary { cursor: pointer; color: var(--primaria); font-size: .9rem; }
 /* ---------- Admin ---------- */
 .lista-admin { list-style: none; padding: 0; margin: 1rem 0 0; display: grid; gap: .6rem; }
 .lista-admin li { display: flex; align-items: center; justify-content: space-between; gap: .6rem; flex-wrap: wrap; padding-bottom: .6rem; border-bottom: 1px solid var(--borda); }
+
+/* ---------- Troféus ---------- */
+.numeros a { display: grid; color: var(--texto); border-radius: 10px; }
+.numeros a:hover { text-decoration: none; background: var(--primaria-suave); }
+.numeros a span { color: var(--primaria); }
+.numeros-3 { grid-template-columns: repeat(3, 1fr); }
+.btn-largo { display: block; margin-top: 1rem; }
+.voltar { font-size: .85rem; display: inline-block; margin-bottom: .5rem; }
+.trofeus-topo { text-align: center; }
+.placar { margin: 0 0 .5rem; color: var(--muted); }
+.placar strong { font-size: 2rem; color: var(--texto); }
+
+.barra { height: 8px; border-radius: 99px; background: var(--borda); overflow: hidden; width: 100%; }
+.barra span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--primaria), var(--primaria-2)); }
+
+.proxima { border-color: var(--primaria); }
+.proxima .evento-rotulo { margin: 0 0 .6rem; }
+.proxima-corpo { display: flex; gap: .9rem; align-items: center; }
+.proxima-corpo > div { display: grid; gap: .3rem; flex: 1; min-width: 0; }
+.proxima .trofeu-emoji { font-size: 2.8rem; }
+.proxima.completo p { margin: 0; text-align: center; font-weight: 700; }
+
+.trofeus { list-style: none; padding: 0; margin: .8rem 0 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: .6rem; }
+.trofeu { position: relative; display: grid; justify-items: center; align-content: start; text-align: center; gap: .3rem; padding: .9rem .6rem; border-radius: 14px; border: 1px solid var(--borda); }
+.trofeu small { color: var(--muted); font-size: .75rem; }
+.trofeu .pts { font-size: .75rem; }
+.trofeu-emoji { font-size: 2.2rem; line-height: 1; }
+.trofeu-status { font-size: .72rem; font-weight: 600; color: var(--muted); }
+.trofeu .barra { height: 6px; margin-top: .2rem; }
+.trofeu.ganhou { background: var(--primaria-suave); border-color: var(--primaria); }
+.trofeu.ganhou .trofeu-emoji { filter: drop-shadow(0 3px 6px rgb(0 0 0 / .2)); }
+.trofeu.ganhou .trofeu-status { color: var(--sucesso); }
+.trofeu.ouro { background: #fef3c7; border-color: var(--ouro); }
+.trofeu.bloqueada { border-style: dashed; }
+.trofeu.bloqueada .trofeu-emoji { filter: grayscale(1); opacity: .4; }
+.trofeu.bloqueada strong { color: var(--muted); }
+.trofeu-vezes { position: absolute; top: .4rem; right: .5rem; font-size: .75rem; font-weight: 800; background: var(--ouro); color: #fff; border-radius: 99px; padding: .05rem .45rem; }
+@media (prefers-color-scheme: dark) {
+  .trofeu.ouro { background: #3b2a0a; }
+}

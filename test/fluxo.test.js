@@ -162,8 +162,22 @@ test('fluxo completo', async () => {
   assert.match(perfil.html, /2 posts publicados<\/td><td class="pts">\+20/);
   assert.match(perfil.html, /1 medalha de professor<\/td><td class="pts">\+50/);
   assert.match(perfil.html, /Posts <span class="contador">2/);
-  assert.match(perfil.html, /Próximas conquistas/);
-  assert.match((await bruno.get('/u/2')).html, /Conquistas que faltam/);
+  assert.match(perfil.html, /href="\/u\/2\/trofeus">🏆 Ver troféus e próximas conquistas \(5\)/);
+  assert.match((await bruno.get('/u/2')).html, /conquistas que faltam \(5\)/);
+
+  // Troféus: o que a Ana já ganhou e o que falta, com o progresso.
+  const trofeus = (await ana.get('/u/2/trofeus')).html;
+  assert.match(trofeus, /Meus troféus/);
+  assert.match(trofeus, /<strong>3<\/strong> de 12 troféus/); // 2 conquistas + 1 tipo de medalha
+  assert.match(trofeus, /Primeiro clique<\/strong>[\s\S]*?✓ Desbloqueada/);
+  assert.match(trofeus, /Fotógrafo do campus<\/strong>[\s\S]*?2\/10 · Faltam 8 posts/);
+  assert.match(trofeus, /Popular<\/strong>[\s\S]*?2\/50 · Faltam 48 curtidas/);
+  assert.match(trofeus, /Excelência acadêmica<\/strong>[\s\S]*?✓ Ganhou/);
+  assert.match(trofeus, /Projeto destaque<\/strong>[\s\S]*?Você ainda não ganhou/);
+  assert.match(trofeus, /Sua próxima conquista/);
+  assert.match((await bruno.get('/u/2/trofeus')).html, /Troféus de Ana[\s\S]*Ana ainda não ganhou/);
+  // Professores não têm troféus.
+  assert.equal((await ana.get('/u/4/trofeus')).status, 404);
 
   // Ranking por curso: Psicologia só tem o Bruno; professores não aparecem.
   const psico = await ana.get('/ranking?curso=Psicologia');

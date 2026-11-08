@@ -18,7 +18,7 @@ FROM usuarios u
 WHERE u.papel = 'aluno'`;
 
 function calcular(s) {
-  const conquistas = CONQUISTAS.filter((c) => c.atingiu(s));
+  const conquistas = CONQUISTAS.filter((c) => s[c.conta] >= c.meta);
   const pontosConquistas = conquistas.reduce((soma, c) => soma + c.bonus, 0);
   const total =
     s.posts * PONTOS.post +
