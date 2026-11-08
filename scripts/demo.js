@@ -95,6 +95,11 @@ db.prepare('INSERT INTO avisos (autor_id, titulo, texto) VALUES (?, ?, ?)').run(
   'Inscrições abertas para a Semana Acadêmica',
   'Palestras, oficinas e minicursos de 1 a 5 de dezembro. Inscrições pela secretaria.',
 );
+db.prepare('INSERT INTO avisos (autor_id, titulo, texto) VALUES (?, ?, ?)').run(
+  marina,
+  'Algoritmos: aula de quinta será no laboratório 3',
+  'Tragam o notebook carregado. Vamos fazer a lista 4 em duplas.',
+);
 
 console.log('Dados de exemplo criados! Entre com, por exemplo:');
 console.log('  aluna:     ana.costa@unimax.edu.br / senha1234');

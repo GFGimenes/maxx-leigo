@@ -55,9 +55,13 @@ const opcoesCurso = (selecionado) =>
   config.CURSOS.map((c) => html`<option value="${c}" ${c === selecionado ? 'selected' : ''}>${c}</option>`);
 
 // ---------- Layout ----------
-function layout({ usuario, titulo, ativo, conteudo }) {
-  const item = (chave, href, rotulo) =>
-    html`<a href="${href}" class="${ativo === chave ? 'ativo' : ''}" aria-label="${rotulo}">${icone[chave]}<span>${rotulo}</span></a>`;
+function layout({ usuario, titulo, ativo, conteudo, avisosNovos = 0 }) {
+  const item = (chave, href, rotulo, novos = 0) => {
+    const descricao = novos ? `${rotulo} (${plural(novos, 'aviso novo', 'avisos novos')})` : rotulo;
+    return html`<a href="${href}" class="${ativo === chave ? 'ativo' : ''}" aria-label="${descricao}"><span class="nav-icone">${icone[chave]}${
+      novos ? html`<span class="bolinha" aria-hidden="true">${novos > 9 ? '9+' : novos}</span>` : ''
+    }</span><span>${rotulo}</span></a>`;
+  };
   return html`<!doctype html>
 <html lang="pt-BR">
 <head>
@@ -79,7 +83,7 @@ ${
   usuario
     ? html`<nav class="nav-inferior">
   ${item('inicio', '/', 'Início')}
-  ${item('mural', '/mural', 'Mural')}
+  ${item('mural', '/mural', 'Mural', avisosNovos)}
   ${item('novo', '/novo', 'Postar')}
   ${item('ranking', '/ranking', 'Ranking')}
   ${item('perfil', `/u/${usuario.id}`, 'Perfil')}
@@ -475,34 +479,56 @@ function ranking({ lista, curso, usuario, tiposMedalha }) {
 }
 
 // ---------- Mural ----------
+function autorAviso(a) {
+  // Aviso de conta que foi apagada: mostra como da faculdade.
+  if (!a.usuario_id) return html`<span class="usuario-link"><span><strong>${config.FACULDADE}</strong> ${selo('admin')}</span></span>`;
+  return linkUsuario(a);
+}
+
 function mural({ avisos, usuario, erro }) {
   const admin = usuario.papel === 'admin';
+  const podePublicar = admin || usuario.papel === 'professor';
+  const novos = avisos.filter((a) => a.novo).length;
   return html`<section class="cartao">
   <h1>📢 Mural da ${config.FACULDADE}</h1>
-  <p class="muted">Avisos oficiais da faculdade.</p>
+  <p class="muted">Avisos da faculdade e dos professores.${novos ? html` <strong class="destaque-novo">${plural(novos, 'aviso novo', 'avisos novos')} desde a sua última visita.</strong>` : ''}</p>
   ${
-    admin
-      ? html`${erroBox(erro)}<form method="post" action="/mural" class="form">
-      <label>Título<input name="titulo" required maxlength="120"></label>
-      <label>Aviso<textarea name="texto" rows="4" required maxlength="5000"></textarea></label>
-      <label class="check"><input type="checkbox" name="fixado" value="1"> Fixar no topo (também aparece no início)</label>
-      <button class="btn">Publicar aviso</button>
-    </form>`
+    podePublicar
+      ? html`<details class="novo-aviso" ${erro ? 'open' : ''}>
+      <summary>Publicar um aviso</summary>
+      ${erroBox(erro)}
+      <form method="post" action="/mural" class="form">
+        <label>Título<input name="titulo" required maxlength="120" placeholder="Ex.: Aula de quinta cancelada"></label>
+        <label>Aviso<textarea name="texto" rows="4" required maxlength="5000"></textarea></label>
+        ${
+          admin
+            ? html`<label class="check"><input type="checkbox" name="fixado" value="1"> Fixar no topo (também aparece no início)</label>`
+            : html`<p class="muted dica">O aviso sai com o seu nome e todos os alunos veem. Só você e a faculdade podem apagá-lo.</p>`
+        }
+        <button class="btn">Publicar aviso</button>
+      </form>
+    </details>`
       : ''
   }
 </section>
 ${avisos.length === 0 ? html`<section class="cartao"><p class="muted">Nenhum aviso por enquanto.</p></section>` : ''}
 ${avisos.map(
-  (a) => html`<article class="cartao aviso ${a.fixado ? 'fixado' : ''}">
-    ${a.fixado ? html`<span class="selo selo-oficial">📌 Fixado</span>` : ''}
+  (a) => html`<article class="cartao aviso ${a.fixado ? 'fixado' : ''} ${a.novo ? 'novo' : ''}" id="aviso-${a.id}">
+    <div class="aviso-topo">
+      ${autorAviso(a)}
+      <span class="aviso-selos">
+        ${a.novo ? html`<span class="selo selo-novo">Novo</span>` : ''}
+        ${a.fixado ? html`<span class="selo selo-oficial">📌 Fixado</span>` : ''}
+      </span>
+    </div>
     <h2>${a.titulo}</h2>
     <p class="texto-aviso">${a.texto}</p>
     <small class="muted">${tempoRelativo(a.criado_em)}</small>
     ${
-      admin
+      admin || a.podeApagar
         ? html`<div class="acoes-perfil">
-        <form method="post" action="/mural/${a.id}/fixar"><button class="btn-link">${a.fixado ? 'Desafixar' : 'Fixar'}</button></form>
-        <form method="post" action="/mural/${a.id}/apagar" onsubmit="return confirm('Apagar este aviso?')"><button class="btn-link perigo">Apagar</button></form>
+        ${admin ? html`<form method="post" action="/mural/${a.id}/fixar"><button class="btn-link">${a.fixado ? 'Desafixar' : 'Fixar'}</button></form>` : ''}
+        ${a.podeApagar ? html`<form method="post" action="/mural/${a.id}/apagar" onsubmit="return confirm('Apagar este aviso?')"><button class="btn-link perigo">Apagar</button></form>` : ''}
       </div>`
         : ''
     }

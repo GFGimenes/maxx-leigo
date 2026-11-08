@@ -242,7 +242,24 @@ details > summary { cursor: pointer; color: var(--primaria); font-size: .9rem; }
 
 /* ---------- Mural ---------- */
 .aviso.fixado { border-color: var(--primaria); }
-.aviso h2 { margin-top: .3rem; }
+.aviso.novo { box-shadow: inset 4px 0 0 var(--primaria-2); }
+.aviso h2 { margin: .7rem 0 .3rem; }
+.aviso-topo { display: flex; align-items: center; justify-content: space-between; gap: .6rem; }
+.aviso-selos { display: flex; gap: .3rem; flex-shrink: 0; }
+.selo-novo { background: var(--primaria-2); color: #fff; }
+.destaque-novo { color: var(--primaria-2); }
+.novo-aviso { margin-top: .6rem; }
+.novo-aviso .form { margin-top: .8rem; }
+.dica { margin: 0; font-size: .8rem; }
+
+/* Bolinha de avisos novos no menu */
+.nav-icone { position: relative; display: inline-flex; }
+.bolinha {
+  position: absolute; top: -4px; right: -9px;
+  min-width: 18px; height: 18px; padding: 0 4px; border-radius: 99px;
+  background: var(--primaria-2); color: #fff; border: 2px solid var(--cartao);
+  font-size: .62rem; font-weight: 800; line-height: 14px; text-align: center;
+}
 .texto-aviso { white-space: pre-wrap; overflow-wrap: anywhere; }
 
 /* ---------- Admin ---------- */
