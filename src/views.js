@@ -1,6 +1,7 @@
 // Telas do Maxx.
 const { html, raw } = require('./html');
 const config = require('./config');
+const { CONTAS: CONTAS_BANCA } = require('./banca');
 const { PONTOS, CONQUISTAS } = require('./regras');
 
 // ---------- Ícones ----------
@@ -90,7 +91,22 @@ ${
 }
 
 // ---------- Entrar / Cadastrar ----------
-function telaEntrar({ erro, email = '' }) {
+function caixaBanca(erro) {
+  return html`<section class="cartao auth banca" id="banca">
+  <h2>Banca do TCC</h2>
+  <p class="muted">Entre sem cadastro com o código de acesso da apresentação.</p>
+  ${erroBox(erro)}
+  <form method="post" action="/banca" class="form">
+    <label>Código de acesso<input name="codigo" required autocomplete="off" autocapitalize="none" spellcheck="false"></label>
+    <span class="banca-rotulo">Entrar como</span>
+    <div class="banca-perfis">
+      ${Object.entries(CONTAS_BANCA).map(([perfil, c]) => html`<button class="btn btn-sec" name="perfil" value="${perfil}">${c.rotulo}</button>`)}
+    </div>
+  </form>
+</section>`;
+}
+
+function telaEntrar({ erro, email = '', banca = false, erroBanca }) {
   return html`<section class="cartao auth">
   <h1 class="marca-grande">${config.NOME_APP}</h1>
   <p class="muted">A rede social da ${config.FACULDADE}</p>
@@ -101,7 +117,8 @@ function telaEntrar({ erro, email = '' }) {
     <button class="btn">Entrar</button>
   </form>
   <p class="muted">Ainda não tem conta? <a href="/cadastrar">Cadastre-se</a></p>
-</section>`;
+</section>
+${banca ? caixaBanca(erroBanca) : ''}`;
 }
 
 function telaCadastrar({ erro, dados = {} }) {

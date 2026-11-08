@@ -108,6 +108,10 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--primaria); 
 
 .auth { margin-top: 2rem; display: grid; gap: .8rem; }
 .auth p { text-align: center; margin: 0; }
+.banca { margin-top: 1rem; border-style: dashed; }
+.banca h2 { margin: 0; text-align: center; font-size: 1.1rem; }
+.banca-rotulo { font-size: .9rem; font-weight: 600; }
+.banca-perfis { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: .5rem; }
 
 .avatar { border-radius: 50%; object-fit: cover; flex-shrink: 0; }
 .avatar-p { width: 36px; height: 36px; }

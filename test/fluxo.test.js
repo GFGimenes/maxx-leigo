@@ -8,6 +8,7 @@ const path = require('node:path');
 const pasta = fs.mkdtempSync(path.join(os.tmpdir(), 'maxx-teste-'));
 process.env.MAXX_DADOS = pasta;
 process.env.ADMIN_SENHA = 'senha-admin-teste';
+process.env.CODIGO_BANCA = 'banca-teste';
 
 const app = require('../src/app');
 let servidor;
@@ -136,4 +137,40 @@ test('fluxo completo', async () => {
   // Sair encerra a sessão.
   await ana.post('/sair');
   assert.equal((await ana.get('/')).local, '/entrar');
+});
+
+test('acesso da banca', async () => {
+  const config = require('../src/config');
+  const anon = cliente();
+
+  // A tela de entrar mostra a caixa da banca.
+  assert.match((await anon.get('/entrar')).html, /Banca do TCC/);
+
+  // Código errado não entra.
+  const errado = await anon.post('/banca', { codigo: 'chute', perfil: 'aluno' });
+  assert.equal(errado.status, 401);
+  assert.match(errado.html, /Código de acesso incorreto/);
+
+  // Com o código certo, entra como aluno, professor ou faculdade (sem ligar para maiúsculas).
+  const aluno = cliente();
+  assert.equal((await aluno.post('/banca', { codigo: 'Banca-Teste', perfil: 'aluno' })).local, '/');
+  assert.equal((await aluno.post('/posts', { legenda: 'Post da banca' })).status, 302);
+  const prof = cliente();
+  await prof.post('/banca', { codigo: 'banca-teste', perfil: 'professor' });
+  const idAluno = require('../src/db').prepare("SELECT id FROM usuarios WHERE email = 'banca.aluno@unimax.edu.br'").get().id;
+  assert.equal((await prof.post(`/u/${idAluno}/medalha`, { tipo_id: '1' })).status, 302);
+  const fac = cliente();
+  await fac.post('/banca', { codigo: 'banca-teste', perfil: 'admin' });
+  assert.equal((await fac.get('/admin')).status, 200);
+
+  // Ninguém consegue se cadastrar com o e-mail de uma conta da banca, nem entrar com senha.
+  const cad = await anon.post('/cadastrar', { nome: 'Xavier', email: 'banca.aluno@unimax.edu.br', curso: 'Direito', senha: 'senha12345' });
+  assert.match(cad.html, /Já existe uma conta/);
+  assert.equal((await anon.post('/entrar', { email: 'banca.aluno@unimax.edu.br', senha: '!' })).status, 401);
+
+  // Desligando o acesso da banca, a caixa some e as sessões da banca param de valer.
+  config.CODIGO_BANCA = '';
+  assert.ok(!(await anon.get('/entrar')).html.includes('Banca do TCC'));
+  assert.equal((await aluno.get('/')).local, '/entrar');
+  assert.equal((await anon.post('/banca', { codigo: 'banca-teste', perfil: 'aluno' })).local, '/entrar');
 });

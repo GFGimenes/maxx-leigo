@@ -32,6 +32,25 @@ Todas as contas de exemplo usam a senha `senha1234`, por exemplo:
 - aluna: `ana.costa@unimax.edu.br`
 - professora: `prof.marina@unimax.edu.br`
 
+### Acesso da banca (dia da apresentação)
+
+Para a banca testar o app sem ter cadastro na faculdade, inicie o Maxx com um **código de acesso** (mínimo 6 caracteres):
+
+```
+# PowerShell
+$env:CODIGO_BANCA="maxx2026"; npm start
+
+# Mac/Linux
+CODIGO_BANCA=maxx2026 npm start
+```
+
+A tela de entrar passa a mostrar a caixa **Banca do TCC**: é só digitar o código e escolher entrar como **Aluno(a)**, **Professor(a)** ou **Faculdade** (administração). As contas de teste são criadas sozinhas no primeiro acesso.
+
+- Sem `CODIGO_BANCA`, a caixa não aparece e as contas de teste não funcionam (nem para quem já estava logado).
+- As contas de teste não têm senha: só dá para entrar nelas pelo código.
+- Depois de 10 códigos errados, o aparelho espera 15 minutos para tentar de novo.
+- Dica: rode `npm run demo` antes, para a banca encontrar o app com conteúdo.
+
 ### Como liberar um professor
 
 1. O professor cria a conta normalmente pelo site.

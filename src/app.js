@@ -8,6 +8,7 @@ const config = require('./config');
 const db = require('./db');
 const { hashSenha, confereSenha } = require('./senha');
 const pontos = require('./pontos');
+const banca = require('./banca');
 const v = require('./views');
 
 const PASTA_UPLOADS = path.join(config.PASTA_DADOS, 'uploads');
@@ -116,6 +117,8 @@ app.use((req, res, next) => {
     req.usuario = db
       .prepare('SELECT u.* FROM sessoes s JOIN usuarios u ON u.id = s.usuario_id WHERE s.token_hash = ? AND s.expira_em > ?')
       .get(hashToken(token), Date.now());
+    // Contas da banca só valem enquanto o acesso da banca estiver ligado.
+    if (req.usuario && !banca.ligada() && banca.ehContaBanca(req.usuario.email)) req.usuario = undefined;
   }
   next();
 });
@@ -123,14 +126,14 @@ app.use((req, res, next) => {
 // ----- Entrar / cadastrar / sair -----
 app.get('/entrar', (req, res) => {
   if (req.usuario) return res.redirect('/');
-  enviar(req, res, { titulo: 'Entrar', conteudo: v.telaEntrar({}) });
+  enviar(req, res, { titulo: 'Entrar', conteudo: v.telaEntrar({ banca: banca.ligada() }) });
 });
 
 app.post('/entrar', (req, res) => {
   const email = texto(req.body.email, 200).toLowerCase();
   const usuario = db.prepare('SELECT * FROM usuarios WHERE email = ?').get(email);
   if (!usuario || !confereSenha(String(req.body.senha || ''), usuario.senha_hash)) {
-    return enviar(req, res, { titulo: 'Entrar', status: 401, conteudo: v.telaEntrar({ erro: 'E-mail ou senha incorretos.', email }) });
+    return enviar(req, res, { titulo: 'Entrar', status: 401, conteudo: v.telaEntrar({ erro: 'E-mail ou senha incorretos.', email, banca: banca.ligada() }) });
   }
   iniciarSessao(res, usuario.id);
   res.redirect('/');
@@ -155,13 +158,23 @@ app.post('/cadastrar', (req, res) => {
     erro = `Use seu e-mail da faculdade (@${config.DOMINIOS_PERMITIDOS.join(', @')}).`;
   else if (!config.CURSOS.includes(dados.curso)) erro = 'Selecione seu curso.';
   else if (senha.length < 8) erro = 'A senha precisa ter pelo menos 8 caracteres.';
-  else if (db.prepare('SELECT 1 FROM usuarios WHERE email = ?').get(dados.email)) erro = 'Já existe uma conta com esse e-mail.';
+  else if (banca.ehContaBanca(dados.email) || db.prepare('SELECT 1 FROM usuarios WHERE email = ?').get(dados.email)) erro = 'Já existe uma conta com esse e-mail.';
   if (erro) return enviar(req, res, { titulo: 'Cadastrar', status: 400, conteudo: v.telaCadastrar({ erro, dados }) });
 
   const { lastInsertRowid } = db
     .prepare('INSERT INTO usuarios (nome, email, senha_hash, curso) VALUES (?, ?, ?, ?)')
     .run(dados.nome, dados.email, hashSenha(senha), dados.curso);
   iniciarSessao(res, Number(lastInsertRowid));
+  res.redirect('/');
+});
+
+app.post('/banca', (req, res) => {
+  if (!banca.ligada()) return res.redirect('/entrar');
+  const r = banca.entrar({ codigo: texto(req.body.codigo, 200), perfil: String(req.body.perfil || ''), ip: req.ip });
+  if (r.erro) {
+    return enviar(req, res, { titulo: 'Entrar', status: 401, conteudo: v.telaEntrar({ banca: true, erroBanca: r.erro }) });
+  }
+  iniciarSessao(res, r.usuarioId);
   res.redirect('/');
 });
 
