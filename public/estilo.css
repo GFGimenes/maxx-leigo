@@ -194,11 +194,23 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--primaria); 
 .numeros span { font-size: .75rem; color: var(--muted); }
 .acoes-perfil { display: flex; gap: .5rem; margin-top: 1rem; flex-wrap: wrap; }
 .acoes-perfil form { margin: 0; }
+.contador { font-size: .8rem; font-weight: 600; color: var(--muted); background: var(--primaria-suave); border-radius: 999px; padding: .05rem .5rem; vertical-align: middle; }
+.cartao h3 { font-size: .9rem; color: var(--muted); margin: 1rem 0 .5rem; }
+.cartao h2 + h3 { margin-top: 0; }
+details > summary { cursor: pointer; color: var(--primaria); font-size: .9rem; }
+.extrato { margin-top: .8rem; text-align: center; }
+.extrato table { width: 100%; max-width: 360px; margin: .6rem auto 0; border-collapse: collapse; font-size: .9rem; text-align: left; }
+.extrato td { padding: .3rem 0; border-bottom: 1px solid var(--borda); }
+.extrato td:last-child { text-align: right; white-space: nowrap; }
+.extrato .total td { border-bottom: 0; font-weight: 700; }
+.faltam { margin-top: 1rem; }
+.faltam .conquistas { margin-top: .6rem; }
 
 .conquistas { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: .6rem; }
 .conquistas li { display: grid; justify-items: center; text-align: center; gap: .15rem; padding: .7rem .4rem; border-radius: 12px; border: 1px solid var(--borda); }
 .conquistas .emoji { font-size: 1.8rem; }
 .conquistas small { color: var(--muted); font-size: .72rem; }
+.conquistas .pts { font-size: .75rem; }
 .conquistas .ganhou { background: var(--primaria-suave); border-color: var(--primaria); }
 .conquistas .bloqueada { opacity: .45; filter: grayscale(1); }
 
