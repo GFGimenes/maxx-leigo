@@ -307,8 +307,9 @@ function perfil({ perfil: p, stats, medalhas, tiposMedalha, posts, usuario, meda
       <div><strong>${fmt(stats.total)}</strong><span>pontos</span></div>
       <div><strong>${stats.posicao_geral ?? '–'}º</strong><span>no geral</span></div>
       <div><strong>${stats.posicao_curso ?? '–'}º</strong><span>no curso</span></div>
-      <div><strong>${stats.medalhas}</strong><span>medalhas</span></div>
-    </div>`
+      <div><strong>${stats.medalhas + stats.conquistas.length}</strong><span>prêmios</span></div>
+    </div>
+    ${extratoPontos(stats)}`
       : ''
   }
   ${p.papel === 'professor' ? html`<p class="muted">Já entregou ${plural(medalhasDadas, 'medalha', 'medalhas')} para alunos.</p>` : ''}
@@ -337,40 +338,85 @@ ${
     : ''
 }
 
-${
-  stats
-    ? html`<section class="cartao">
-    <h2>Conquistas</h2>
-    <ul class="conquistas">
-      ${CONQUISTAS.map((c) => {
-        const tem = stats.conquistas.some((x) => x.id === c.id);
-        return html`<li class="${tem ? 'ganhou' : 'bloqueada'}" title="${c.descricao}">
-          <span class="emoji">${c.emoji}</span><strong>${c.nome}</strong><small>${c.descricao}</small></li>`;
-      })}
-    </ul>
-  </section>
-  <section class="cartao">
-    <h2>Medalhas dos professores</h2>
-    ${medalhas.length === 0 ? html`<p class="muted">Nenhuma medalha ainda.</p>` : ''}
+${stats ? premios({ stats, medalhas, proprio, primeiroNome: p.nome.split(' ')[0] }) : ''}
+
+<section class="cartao">
+  <h2>Posts <span class="contador">${posts.length}</span></h2>
+  ${
+    posts.length === 0
+      ? html`<p class="muted">${proprio ? 'Você ainda não publicou nada.' : 'Nenhum post ainda.'}</p>
+        ${proprio ? html`<a class="btn" href="/novo">Publicar o primeiro post</a>` : ''}`
+      : html`<div class="grade">
+    ${posts.map(
+      (post) => html`<a href="/posts/${post.id}" class="grade-item" aria-label="Ver post">${
+        post.imagem
+          ? html`<img src="/uploads/${post.imagem}" alt="${post.legenda || `Foto de ${p.nome}`}" loading="lazy">`
+          : html`<span>${post.legenda.slice(0, 80)}</span>`
+      }</a>`,
+    )}
+  </div>`
+  }
+</section>`;
+}
+
+// De onde vieram os pontos do aluno (abre ao tocar).
+function extratoPontos(s) {
+  const linhas = [
+    [plural(s.posts, 'post publicado', 'posts publicados'), s.posts * PONTOS.post],
+    [plural(s.curtidas, 'curtida recebida', 'curtidas recebidas'), s.curtidas * PONTOS.curtida],
+    [plural(s.comentarios, 'post de colega comentado', 'posts de colegas comentados'), s.comentarios * PONTOS.comentario],
+    [plural(s.medalhas, 'medalha de professor', 'medalhas de professores'), s.pontos_medalhas],
+    [plural(s.conquistas.length, 'conquista', 'conquistas'), s.pontos_conquistas],
+  ];
+  return html`<details class="extrato">
+  <summary>De onde vêm os pontos</summary>
+  <table>
+    ${linhas.map(([rotulo, pts]) => html`<tr><td>${rotulo}</td><td class="pts">+${fmt(pts)}</td></tr>`)}
+    <tr class="total"><td>Total</td><td>${fmt(s.total)} pts</td></tr>
+  </table>
+</details>`;
+}
+
+// Prêmios: medalhas dadas por professores + conquistas desbloqueadas.
+function premios({ stats, medalhas, proprio, primeiroNome }) {
+  const ganhas = CONQUISTAS.filter((c) => stats.conquistas.some((x) => x.id === c.id));
+  const faltam = CONQUISTAS.filter((c) => !ganhas.includes(c));
+  const total = medalhas.length + ganhas.length;
+  return html`<section class="cartao">
+  <h2>Prêmios <span class="contador">${total}</span></h2>
+  ${total === 0 ? html`<p class="muted">${proprio ? 'Você' : primeiroNome} ainda não ganhou prêmios. Posts, curtidas e medalhas dos professores desbloqueiam os primeiros!</p>` : ''}
+  ${
+    medalhas.length
+      ? html`<h3>Medalhas dos professores</h3>
     <ul class="medalhas">
       ${medalhas.map(
         (m) => html`<li><span class="emoji">${m.emoji}</span><div><strong>${m.nome}</strong> <span class="pts">+${m.pontos}</span>
           <small class="muted">por ${m.professor_nome || 'professor(a)'} · ${tempoRelativo(m.criado_em)}</small>
           ${m.mensagem ? html`<p>“${m.mensagem}”</p>` : ''}</div></li>`,
       )}
-    </ul>
-  </section>`
-    : ''
-}
-
-<section class="grade">
-  ${posts.map(
-    (post) => html`<a href="/posts/${post.id}" class="grade-item">${
-      post.imagem ? html`<img src="/uploads/${post.imagem}" alt="" loading="lazy">` : html`<span>${post.legenda.slice(0, 80)}</span>`
-    }</a>`,
-  )}
+    </ul>`
+      : ''
+  }
+  ${
+    ganhas.length
+      ? html`<h3>Conquistas</h3>
+    <ul class="conquistas">${ganhas.map((c) => itemConquista(c, true))}</ul>`
+      : ''
+  }
+  ${
+    faltam.length
+      ? html`<details class="faltam">
+    <summary>${proprio ? 'Próximas conquistas' : 'Conquistas que faltam'} (${faltam.length})</summary>
+    <ul class="conquistas">${faltam.map((c) => itemConquista(c, false))}</ul>
+  </details>`
+      : ''
+  }
 </section>`;
 }
+
+const itemConquista = (c, ganhou) =>
+  html`<li class="${ganhou ? 'ganhou' : 'bloqueada'}">
+  <span class="emoji">${c.emoji}</span><strong>${c.nome}</strong><small>${c.descricao}</small><span class="pts">+${c.bonus}</span></li>`;
 
 function editarPerfil({ usuario, erro }) {
   return html`<section class="cartao">

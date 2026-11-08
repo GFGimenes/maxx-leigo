@@ -136,6 +136,13 @@ test('fluxo completo', async () => {
   const perfil = await ana.get('/u/2');
   assert.match(perfil.html, /114<\/strong><span>pontos/);
   assert.match(perfil.html, /Excelente seminário/);
+  // Perfil: 1 medalha + 2 conquistas = 3 prêmios, extrato dos pontos e os 2 posts.
+  assert.match(perfil.html, /3<\/strong><span>prêmios/);
+  assert.match(perfil.html, /2 posts publicados<\/td><td class="pts">\+20/);
+  assert.match(perfil.html, /1 medalha de professor<\/td><td class="pts">\+50/);
+  assert.match(perfil.html, /Posts <span class="contador">2/);
+  assert.match(perfil.html, /Próximas conquistas/);
+  assert.match((await bruno.get('/u/2')).html, /Conquistas que faltam/);
 
   // Ranking por curso: Psicologia só tem o Bruno; professores não aparecem.
   const psico = await ana.get('/ranking?curso=Psicologia');
