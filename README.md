@@ -7,6 +7,7 @@ A rede social da **UniMax**: um "Instagram" só para alunos e professores da fac
 - **Feed** com posts de foto e/ou texto, curtidas e comentários (dá para comentar direto no feed), e cartões comemorando as **medalhas** e **conquistas** dos alunos (sem stories, vídeos ou mensagens).
 - **Acesso restrito**: só e-mails `@unimax.edu.br` conseguem criar conta.
 - **Pontos e conquistas**: quem posta, comenta e recebe curtidas ganha pontos, e desbloqueia conquistas com bônus.
+- **Troféus**: cada aluno tem uma tela de troféus, estilo conquistas de jogo, com as conquistas e medalhas que já ganhou, as que faltam e quanto falta para cada uma (abre pelo botão "Ver troféus" do perfil).
 - **Medalhas de professores**: professores entregam medalhas (com mensagem) que valem pontos.
 - **Ranking geral e por curso** (só alunos participam).
 - **Mural de avisos**: a faculdade e os professores publicam avisos, e todos leem. Cada aviso mostra quem publicou, e o ícone do Mural mostra quantos avisos novos a pessoa ainda não viu. Só a faculdade fixa avisos no topo. Cada professor apaga só os próprios avisos, e a faculdade pode apagar qualquer um.

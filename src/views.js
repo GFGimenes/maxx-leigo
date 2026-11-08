@@ -219,7 +219,7 @@ function cartaoConquista(c) {
     <p class="evento-rotulo">✨ Nova conquista</p>
     <h2>${primeiroNome} desbloqueou <span class="evento-destaque">${c.info.nome}</span></h2>
     <p class="muted">${c.info.descricao} · <span class="pts">+${c.info.bonus} pts</span></p>
-    <a class="btn btn-sec" href="/u/${c.usuario_id}">Ver conquistas de ${primeiroNome}</a>
+    <a class="btn btn-sec" href="/u/${c.usuario_id}/trofeus">Ver troféus de ${primeiroNome}</a>
   </div>
 </article>`;
 }
@@ -311,7 +311,7 @@ function perfil({ perfil: p, stats, medalhas, tiposMedalha, posts, usuario, meda
       <div><strong>${fmt(stats.total)}</strong><span>pontos</span></div>
       <div><strong>${stats.posicao_geral ?? '–'}º</strong><span>no geral</span></div>
       <div><strong>${stats.posicao_curso ?? '–'}º</strong><span>no curso</span></div>
-      <div><strong>${stats.medalhas + stats.conquistas.length}</strong><span>prêmios</span></div>
+      <a href="/u/${p.id}/trofeus"><strong>${stats.medalhas + stats.conquistas.length}</strong><span>prêmios</span></a>
     </div>
     ${extratoPontos(stats)}`
       : ''
@@ -342,7 +342,7 @@ ${
     : ''
 }
 
-${stats ? premios({ stats, medalhas, proprio, primeiroNome: p.nome.split(' ')[0] }) : ''}
+${stats ? premios({ id: p.id, stats, medalhas, proprio, primeiroNome: p.nome.split(' ')[0] }) : ''}
 
 <section class="cartao">
   <h2>Posts <span class="contador">${posts.length}</span></h2>
@@ -382,11 +382,11 @@ function extratoPontos(s) {
 }
 
 // Prêmios: medalhas dadas por professores + conquistas desbloqueadas.
-function premios({ stats, medalhas, proprio, primeiroNome }) {
+function premios({ id, stats, medalhas, proprio, primeiroNome }) {
   const ganhas = CONQUISTAS.filter((c) => stats.conquistas.some((x) => x.id === c.id));
-  const faltam = CONQUISTAS.filter((c) => !ganhas.includes(c));
+  const faltam = CONQUISTAS.length - ganhas.length;
   const total = medalhas.length + ganhas.length;
-  return html`<section class="cartao">
+  return html`<section class="cartao" id="premios">
   <h2>Prêmios <span class="contador">${total}</span></h2>
   ${total === 0 ? html`<p class="muted">${proprio ? 'Você' : primeiroNome} ainda não ganhou prêmios. Posts, curtidas e medalhas dos professores desbloqueiam os primeiros!</p>` : ''}
   ${
@@ -404,22 +404,128 @@ function premios({ stats, medalhas, proprio, primeiroNome }) {
   ${
     ganhas.length
       ? html`<h3>Conquistas</h3>
-    <ul class="conquistas">${ganhas.map((c) => itemConquista(c, true))}</ul>`
+    <ul class="conquistas">${ganhas.map(itemConquista)}</ul>`
       : ''
   }
-  ${
-    faltam.length
-      ? html`<details class="faltam">
-    <summary>${proprio ? 'Próximas conquistas' : 'Conquistas que faltam'} (${faltam.length})</summary>
-    <ul class="conquistas">${faltam.map((c) => itemConquista(c, false))}</ul>
-  </details>`
-      : ''
-  }
+  <a class="btn btn-sec btn-largo" href="/u/${id}/trofeus">🏆 ${
+    faltam ? `Ver troféus e ${proprio ? 'próximas conquistas' : 'conquistas que faltam'} (${faltam})` : 'Ver todos os troféus'
+  }</a>
 </section>`;
 }
 
-const itemConquista = (c, ganhou) =>
-  html`<li class="${ganhou ? 'ganhou' : 'bloqueada'}">
+// ---------- Troféus ----------
+// Como cada contagem aparece no progresso ("Faltam 6 curtidas").
+const NOMES_CONTA = {
+  posts: ['post', 'posts'],
+  comentarios: ['post de colega comentado', 'posts de colegas comentados'],
+  curtidas: ['curtida', 'curtidas'],
+  medalhas: ['medalha', 'medalhas'],
+};
+
+function barra(atual, meta, rotulo) {
+  const pct = Math.round((Math.min(atual, meta) / meta) * 100);
+  return html`<div class="barra" role="progressbar" aria-valuemin="0" aria-valuemax="${meta}" aria-valuenow="${Math.min(atual, meta)}" aria-label="${rotulo}"><span style="width:${pct}%"></span></div>`;
+}
+
+function faltaQuanto(c, s) {
+  const falta = c.meta - s[c.conta];
+  const [um, varios] = NOMES_CONTA[c.conta];
+  return `${falta === 1 ? 'Falta' : 'Faltam'} ${plural(falta, um, varios)}`;
+}
+
+function cartaoTrofeu(c, s, data) {
+  const ganhou = s[c.conta] >= c.meta;
+  const atual = Math.min(s[c.conta], c.meta);
+  return html`<li class="trofeu ${ganhou ? 'ganhou' : 'bloqueada'}">
+  <span class="trofeu-emoji" aria-hidden="true">${c.emoji}</span>
+  <strong>${c.nome}</strong>
+  <small>${c.descricao}</small>
+  ${
+    ganhou
+      ? html`<span class="trofeu-status">✓ Desbloqueada${data ? ` · ${tempoRelativo(data)}` : ''}</span>`
+      : html`${barra(atual, c.meta, `Progresso de ${c.nome}`)}<span class="trofeu-status">${fmt(atual)}/${fmt(c.meta)} · ${faltaQuanto(c, s)}</span>`
+  }
+  <span class="pts">+${c.bonus} pts</span>
+</li>`;
+}
+
+function cartaoMedalhaTipo(t, primeiroNome, proprio) {
+  const ganhou = t.vezes > 0;
+  return html`<li class="trofeu ${ganhou ? 'ganhou ouro' : 'bloqueada'}">
+  <span class="trofeu-emoji" aria-hidden="true">${t.emoji}</span>
+  ${t.vezes > 1 ? html`<span class="trofeu-vezes">×${t.vezes}</span>` : ''}
+  <strong>${t.nome}</strong>
+  <small>${t.descricao}</small>
+  <span class="trofeu-status">${
+    ganhou
+      ? `✓ ${t.vezes === 1 ? 'Ganhou' : `Ganhou ${t.vezes} vezes`} · ${tempoRelativo(t.ultima_em)}`
+      : `${proprio ? 'Você ainda não ganhou' : `${primeiroNome} ainda não ganhou`}`
+  }</span>
+  <span class="pts">+${t.pontos} pts</span>
+</li>`;
+}
+
+function trofeus({ perfil: p, usuario, stats: s, datasConquistas, medalhasPorTipo }) {
+  const proprio = usuario.id === p.id;
+  const primeiroNome = p.nome.split(' ')[0];
+  const ganhas = CONQUISTAS.filter((c) => s[c.conta] >= c.meta);
+  const faltam = CONQUISTAS.filter((c) => s[c.conta] < c.meta);
+  const tiposGanhos = medalhasPorTipo.filter((t) => t.vezes > 0).length;
+  const desbloqueados = ganhas.length + tiposGanhos;
+  const totalTrofeus = CONQUISTAS.length + medalhasPorTipo.length;
+  // A conquista mais perto de sair (maior porcentagem já feita).
+  const proxima = faltam.slice().sort((a, b) => s[b.conta] / b.meta - s[a.conta] / a.meta)[0];
+  return html`<section class="cartao trofeus-topo">
+  <a class="voltar" href="/u/${p.id}">‹ ${proprio ? 'Meu perfil' : `Perfil de ${primeiroNome}`}</a>
+  <h1>🏆 ${proprio ? 'Meus troféus' : `Troféus de ${primeiroNome}`}</h1>
+  <p class="placar"><strong>${desbloqueados}</strong> de ${totalTrofeus} troféus</p>
+  ${barra(desbloqueados, totalTrofeus, 'Troféus desbloqueados')}
+  <div class="numeros numeros-3">
+    <div><strong>${ganhas.length}/${CONQUISTAS.length}</strong><span>conquistas</span></div>
+    <div><strong>${tiposGanhos}/${medalhasPorTipo.length}</strong><span>tipos de medalha</span></div>
+    <div><strong>+${fmt(s.pontos_conquistas + s.pontos_medalhas)}</strong><span>pontos em prêmios</span></div>
+  </div>
+</section>
+
+${
+  proxima
+    ? html`<section class="cartao proxima">
+    <p class="evento-rotulo">${proprio ? '🎯 Sua próxima conquista' : '🎯 Próxima conquista'}</p>
+    <div class="proxima-corpo">
+      <span class="trofeu-emoji" aria-hidden="true">${proxima.emoji}</span>
+      <div>
+        <strong>${proxima.nome}</strong> <span class="pts">+${proxima.bonus} pts</span>
+        <small class="muted">${proxima.descricao}</small>
+        ${barra(s[proxima.conta], proxima.meta, `Progresso de ${proxima.nome}`)}
+        <small><strong>${faltaQuanto(proxima, s)}</strong> · ${fmt(s[proxima.conta])}/${fmt(proxima.meta)}</small>
+      </div>
+    </div>
+  </section>`
+    : html`<section class="cartao proxima completo"><p>🎉 ${proprio ? 'Você desbloqueou' : `${primeiroNome} desbloqueou`} todas as conquistas!</p></section>`
+}
+
+<section class="cartao">
+  <h2>Conquistas <span class="contador">${ganhas.length}/${CONQUISTAS.length}</span></h2>
+  <p class="muted">Desbloqueiam sozinhas quando a meta é atingida e dão pontos de bônus.</p>
+  <ul class="trofeus">
+    ${ganhas.map((c) => cartaoTrofeu(c, s, datasConquistas[c.id]))}
+    ${faltam.map((c) => cartaoTrofeu(c, s))}
+  </ul>
+</section>
+
+<section class="cartao">
+  <h2>Medalhas dos professores <span class="contador">${tiposGanhos}/${medalhasPorTipo.length}</span></h2>
+  <p class="muted">Entregues pelos professores. Dá para ganhar a mesma medalha mais de uma vez.</p>
+  <ul class="trofeus">
+    ${medalhasPorTipo.filter((t) => t.vezes > 0).map((t) => cartaoMedalhaTipo(t, primeiroNome, proprio))}
+    ${medalhasPorTipo.filter((t) => t.vezes === 0).map((t) => cartaoMedalhaTipo(t, primeiroNome, proprio))}
+  </ul>
+  ${s.medalhas ? html`<p class="muted"><a href="/u/${p.id}#premios">Ver as mensagens dos professores ›</a></p>` : ''}
+</section>`;
+}
+
+const itemConquista = (c) =>
+  html`<li class="ganhou">
   <span class="emoji">${c.emoji}</span><strong>${c.nome}</strong><small>${c.descricao}</small><span class="pts">+${c.bonus}</span></li>`;
 
 function editarPerfil({ usuario, erro }) {
@@ -578,6 +684,7 @@ module.exports = {
   novoPost,
   perfil,
   editarPerfil,
+  trofeus,
   ranking,
   mural,
   admin,

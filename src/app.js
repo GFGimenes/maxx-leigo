@@ -303,6 +303,27 @@ app.get('/u/:id', (req, res) => {
   });
 });
 
+// Troféus: conquistas e medalhas do aluno, as que já ganhou e as que faltam.
+app.get('/u/:id/trofeus', (req, res) => {
+  const p = db.prepare("SELECT * FROM usuarios WHERE id = ? AND papel = 'aluno'").get(idParam(req));
+  if (!p) throw new ErroUsuario('Só alunos ganham troféus.', 404);
+  const datasConquistas = Object.fromEntries(
+    db.prepare('SELECT conquista, criado_em FROM conquistas_alunos WHERE aluno_id = ?').all(p.id).map((c) => [c.conquista, c.criado_em]),
+  );
+  const medalhasPorTipo = db
+    .prepare(
+      `SELECT t.*, COUNT(m.id) AS vezes, MAX(m.criado_em) AS ultima_em
+       FROM tipos_medalha t LEFT JOIN medalhas m ON m.tipo_id = t.id AND m.aluno_id = ?
+       GROUP BY t.id ORDER BY t.pontos DESC, t.id`,
+    )
+    .all(p.id);
+  enviar(req, res, {
+    titulo: `Troféus de ${p.nome}`,
+    ativo: p.id === req.usuario.id ? 'perfil' : '',
+    conteudo: v.trofeus({ perfil: p, usuario: req.usuario, stats: pontos.statsDoAluno(p.id), datasConquistas, medalhasPorTipo }),
+  });
+});
+
 app.post('/u/:id/medalha', exigePapel('professor'), (req, res) => {
   const aluno = db.prepare("SELECT * FROM usuarios WHERE id = ? AND papel = 'aluno'").get(idParam(req));
   if (!aluno) throw new ErroUsuario('Medalhas só podem ser dadas para alunos.');
