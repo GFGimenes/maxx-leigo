@@ -110,9 +110,12 @@ const { SQL_POST } = feed;
 // ---------- App ----------
 const app = express();
 app.disable('x-powered-by');
-// Quando o app roda atrás de um túnel ou proxy na mesma máquina, usa o IP real do visitante
-// (para o limite de tentativas do código da banca não juntar todo mundo num IP só).
-app.set('trust proxy', 'loopback');
+// Usa o IP real do visitante quando o app roda atrás de um proxy (para o limite de tentativas
+// do código da banca não juntar todo mundo num IP só). No Azure App Service há sempre um
+// proxy da Microsoft na frente; nos outros casos, só confia em proxy na mesma máquina.
+app.set('trust proxy', process.env.WEBSITE_SITE_NAME ? 1 : 'loopback');
+// O proxy do Azure manda o IP com a porta ("1.2.3.4:5678"); a porta muda a cada conexão.
+const ipVisitante = (req) => String(req.ip || '').replace(/^\[(.+)\]:\d+$/, '$1').replace(/^(\d+\.\d+\.\d+\.\d+):\d+$/, '$1');
 app.use(express.urlencoded({ extended: false, limit: '100kb' }));
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
@@ -178,7 +181,7 @@ app.post('/cadastrar', (req, res) => {
 
 app.post('/banca', (req, res) => {
   if (!banca.ligada()) return res.redirect('/entrar');
-  const r = banca.entrar({ codigo: texto(req.body.codigo, 200), perfil: String(req.body.perfil || ''), ip: req.ip });
+  const r = banca.entrar({ codigo: texto(req.body.codigo, 200), perfil: String(req.body.perfil || ''), ip: ipVisitante(req) });
   if (r.erro) {
     return enviar(req, res, { titulo: 'Entrar', status: 401, conteudo: v.telaEntrar({ banca: true, erroBanca: r.erro }) });
   }

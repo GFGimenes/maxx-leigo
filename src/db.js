@@ -8,9 +8,14 @@ const { hashSenha } = require('./senha');
 fs.mkdirSync(config.PASTA_DADOS, { recursive: true });
 const db = new DatabaseSync(path.join(config.PASTA_DADOS, 'maxx.db'));
 
+// No Azure App Service a pasta de dados fica num disco de rede, onde o modo WAL do SQLite
+// não é seguro; lá usamos o modo tradicional (DELETE).
+const NO_AZURE = Boolean(process.env.WEBSITE_SITE_NAME);
+db.exec(`PRAGMA journal_mode = ${NO_AZURE ? 'DELETE' : 'WAL'};`);
+db.exec('PRAGMA busy_timeout = 5000;');
+
 db.exec(`
 PRAGMA foreign_keys = ON;
-PRAGMA journal_mode = WAL;
 
 CREATE TABLE IF NOT EXISTS usuarios (
   id INTEGER PRIMARY KEY,

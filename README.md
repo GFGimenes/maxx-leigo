@@ -59,12 +59,27 @@ Quem se cadastra com e-mail `@prof.unieduk.com.br` já entra como professor (dom
 1. O professor cria a conta normalmente pelo site.
 2. Entre com a conta da faculdade, clique em **Administração**, mude o papel dele para `professor` e salve.
 
-## Colocar no ar (servidor grátis da Oracle Cloud)
+## Colocar no ar
 
-Com um servidor Ubuntu na nuvem (por exemplo o "Always Free" da Oracle, com as portas 80 e 443 liberadas), rode no PowerShell, dentro desta pasta:
+### Azure App Service (como está hoje: https://maxx-guilherme.azurewebsites.net)
+
+O Maxx roda no plano grátis (F1) do Azure for Students, sem cartão. Para mandar uma versão nova do código, rode no PowerShell, dentro desta pasta:
 
 ```
-powershell -ExecutionPolicy Bypass -File scripts\publicar.ps1 -IP <ip-do-servidor> -Chave "<caminho-da-chave-ssh>"
+powershell -ExecutionPolicy Bypass -File scripts\publicar-azure.ps1
+```
+
+- As contas, posts e fotos ficam no Azure em `/home/maxx-dados` e não são apagados ao publicar.
+- O plano grátis "cochila" depois de uns 20 minutos sem uso: o primeiro acesso depois disso leva uns 20–30 segundos.
+- Cabe por volta de 1 GB de dados (algumas centenas de fotos).
+- Configurações (senha do admin, código da banca etc.) ficam no portal do Azure, em **maxx-guilherme → Variáveis de ambiente**.
+
+### Servidor Ubuntu próprio (alternativa)
+
+Com um servidor Ubuntu na nuvem (com HTTP e HTTPS liberados), rode no PowerShell, dentro desta pasta:
+
+```
+powershell -ExecutionPolicy Bypass -File scripts\publicar.ps1 -IP <ip-do-servidor> -Chave "<caminho-da-chave-ssh>" -Usuario <usuario-do-servidor>
 ```
 
 Na primeira vez ele pede a senha da conta da faculdade e o código da banca (opcional). No final mostra o link, no formato `https://maxx.<ip-com-tracos>.sslip.io`.
