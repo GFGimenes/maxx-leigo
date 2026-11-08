@@ -29,15 +29,28 @@ function calcular(s) {
   return { ...s, conquistas, pontos_conquistas: pontosConquistas, total };
 }
 
-function ranking(curso) {
-  let lista = db.prepare(SQL_STATS).all().map(calcular);
-  if (curso) lista = lista.filter((a) => a.curso === curso);
+// Ordena por pontos e numera as posições. Empatados ficam na mesma posição.
+function posicionar(lista) {
   lista.sort((a, b) => b.total - a.total || a.nome.localeCompare(b.nome, 'pt-BR'));
-  // Empatados ficam na mesma posição.
   lista.forEach((a, i) => {
     a.posicao = i > 0 && lista[i - 1].total === a.total ? lista[i - 1].posicao : i + 1;
   });
   return lista;
+}
+
+function ranking(curso) {
+  let lista = db.prepare(SQL_STATS).all().map(calcular);
+  if (curso) lista = lista.filter((a) => a.curso === curso);
+  return posicionar(lista);
+}
+
+// O ranking geral e o de cada curso de uma vez só (uma consulta ao banco).
+function rankings() {
+  const geral = ranking();
+  const porCurso = {};
+  for (const a of geral) (porCurso[a.curso] ??= []).push({ ...a });
+  for (const lista of Object.values(porCurso)) posicionar(lista);
+  return { geral, porCurso };
 }
 
 function statsDoAluno(id) {
@@ -66,4 +79,4 @@ if (db.prepare('PRAGMA user_version').get().user_version < 1) {
   db.exec('PRAGMA user_version = 1');
 }
 
-module.exports = { ranking, statsDoAluno, registrarConquistas };
+module.exports = { ranking, rankings, statsDoAluno, registrarConquistas };
