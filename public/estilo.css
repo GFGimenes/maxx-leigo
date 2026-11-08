@@ -157,6 +157,31 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--primaria); 
 .comentarios li { display: flex; gap: .6rem; overflow-wrap: anywhere; }
 .comentarios a { color: var(--texto); }
 
+/* Comentários direto no feed */
+.comentario-curto { margin: 0; overflow-wrap: anywhere; }
+.comentario-curto a { color: var(--texto); }
+.comentar-feed { display: flex; gap: .5rem; align-items: center; margin-top: .35rem; border-top: 1px solid var(--borda); padding-top: .5rem; }
+.comentar-feed input { flex: 1; border: 0; background: none; padding: .35rem 0; }
+.comentar-feed input:focus { outline: none; }
+.comentar-feed .btn-link { font-weight: 700; }
+
+/* Medalhas e conquistas no feed */
+.evento-corpo {
+  display: grid; justify-items: center; text-align: center; gap: .35rem; padding: 1.4rem 1.2rem 1.3rem;
+  background: radial-gradient(circle at 50% 0%, var(--primaria-suave), transparent 70%);
+}
+.evento-medalha .evento-corpo { background: radial-gradient(circle at 50% 0%, #fef3c7, transparent 70%); }
+.evento-emoji { font-size: 3.4rem; line-height: 1; filter: drop-shadow(0 4px 8px rgb(0 0 0 / .15)); }
+.evento-rotulo { margin: .2rem 0 0; font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.evento-corpo h2 { margin: 0; font-size: 1.15rem; }
+.evento-destaque { color: var(--primaria); }
+.evento-corpo p { margin: 0; }
+.evento-corpo blockquote { margin: .3rem 0; font-style: italic; max-width: 32ch; overflow-wrap: anywhere; }
+.evento-corpo .btn { margin-top: .5rem; font-size: .9rem; padding: .5rem 1rem; }
+@media (prefers-color-scheme: dark) {
+  .evento-medalha .evento-corpo { background: radial-gradient(circle at 50% 0%, #3b2a0a, transparent 70%); }
+}
+
 .paginacao { display: flex; justify-content: space-between; gap: .5rem; }
 
 /* ---------- Perfil ---------- */

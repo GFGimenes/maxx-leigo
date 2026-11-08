@@ -4,7 +4,7 @@ A rede social da **UniMax**: um "Instagram" só para alunos e professores da fac
 
 ## O que tem
 
-- **Feed** com posts de foto e/ou texto, curtidas e comentários (sem stories, vídeos ou mensagens).
+- **Feed** com posts de foto e/ou texto, curtidas e comentários (dá para comentar direto no feed), e cartões comemorando as **medalhas** e **conquistas** dos alunos (sem stories, vídeos ou mensagens).
 - **Acesso restrito**: só e-mails `@unimax.edu.br` conseguem criar conta.
 - **Pontos e conquistas**: quem posta, comenta e recebe curtidas ganha pontos, e desbloqueia conquistas com bônus.
 - **Medalhas de professores**: professores entregam medalhas (com mensagem) que valem pontos.
@@ -75,6 +75,7 @@ Cursos, domínio de e-mail e outras opções ficam em `src/config.js`.
 src/config.js   configurações (cursos, domínio, porta)
 src/regras.js   pontos, conquistas e medalhas
 src/app.js      rotas/páginas do site
+src/feed.js     monta o feed (posts, medalhas e conquistas)
 src/views.js    telas (HTML)
 src/db.js       banco de dados (SQLite, arquivo em dados/maxx.db)
 public/         estilo e ícone

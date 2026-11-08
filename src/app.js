@@ -9,6 +9,7 @@ const db = require('./db');
 const { hashSenha, confereSenha } = require('./senha');
 const pontos = require('./pontos');
 const banca = require('./banca');
+const feed = require('./feed');
 const v = require('./views');
 
 const PASTA_UPLOADS = path.join(config.PASTA_DADOS, 'uploads');
@@ -95,12 +96,7 @@ const idParam = (req) => {
   return id;
 };
 
-const SQL_POST = `
-SELECT p.*, u.nome, u.avatar, u.papel, u.curso,
-  (SELECT COUNT(*) FROM curtidas c WHERE c.post_id = p.id) AS n_curtidas,
-  (SELECT COUNT(*) FROM comentarios c WHERE c.post_id = p.id) AS n_comentarios,
-  EXISTS (SELECT 1 FROM curtidas c WHERE c.post_id = p.id AND c.usuario_id = ?) AS curti
-FROM posts p JOIN usuarios u ON u.id = p.usuario_id`;
+const { SQL_POST } = feed;
 
 // ---------- App ----------
 const app = express();
@@ -192,14 +188,11 @@ app.use('/uploads', express.static(PASTA_UPLOADS, { maxAge: '7d' }));
 // ----- Feed -----
 app.get('/', (req, res) => {
   const pagina = Math.max(1, parseInt(req.query.pagina, 10) || 1);
-  const posts = db
-    .prepare(`${SQL_POST} ORDER BY p.id DESC LIMIT ? OFFSET ?`)
-    .all(req.usuario.id, POSTS_POR_PAGINA + 1, (pagina - 1) * POSTS_POR_PAGINA);
-  const temMais = posts.length > POSTS_POR_PAGINA;
+  const { itens, temMais } = feed.pagina({ usuarioId: req.usuario.id, pagina, porPagina: POSTS_POR_PAGINA });
   const avisoFixado = db.prepare('SELECT * FROM avisos WHERE fixado = 1 ORDER BY id DESC LIMIT 1').get();
   enviar(req, res, {
     ativo: 'inicio',
-    conteudo: v.feed({ posts: posts.slice(0, POSTS_POR_PAGINA), avisoFixado, pagina, temMais }),
+    conteudo: v.feed({ itens, avisoFixado, pagina, temMais }),
   });
 });
 
@@ -213,6 +206,7 @@ app.post('/posts', upload.single('imagem'), (req, res) => {
     return enviar(req, res, { titulo: 'Novo post', ativo: 'novo', status: 400, conteudo: v.novoPost({ erro: 'Adicione uma foto ou escreva algo.' }) });
   }
   db.prepare('INSERT INTO posts (usuario_id, imagem, legenda) VALUES (?, ?, ?)').run(req.usuario.id, imagem, legenda);
+  pontos.registrarConquistas(req.usuario.id);
   res.redirect('/');
 });
 
@@ -236,14 +230,22 @@ app.get('/posts/:id', (req, res) => {
 app.post('/posts/:id/curtir', (req, res) => {
   const post = buscarPost(req);
   if (post.curti) db.prepare('DELETE FROM curtidas WHERE post_id = ? AND usuario_id = ?').run(post.id, req.usuario.id);
-  else db.prepare('INSERT OR IGNORE INTO curtidas (post_id, usuario_id) VALUES (?, ?)').run(post.id, req.usuario.id);
+  else {
+    db.prepare('INSERT OR IGNORE INTO curtidas (post_id, usuario_id) VALUES (?, ?)').run(post.id, req.usuario.id);
+    pontos.registrarConquistas(post.usuario_id);
+  }
   res.redirect(`${caminhoSeguro(req.body.voltar)}#post-${post.id}`);
 });
 
 app.post('/posts/:id/comentar', (req, res) => {
   const post = buscarPost(req);
   const t = texto(req.body.texto, 500);
-  if (t) db.prepare('INSERT INTO comentarios (post_id, usuario_id, texto) VALUES (?, ?, ?)').run(post.id, req.usuario.id, t);
+  if (t) {
+    db.prepare('INSERT INTO comentarios (post_id, usuario_id, texto) VALUES (?, ?, ?)').run(post.id, req.usuario.id, t);
+    pontos.registrarConquistas(req.usuario.id);
+  }
+  // Comentou pelo feed: volta para o mesmo post no feed. Senão, para a página do post.
+  if (req.body.voltar) return res.redirect(`${caminhoSeguro(req.body.voltar)}#post-${post.id}`);
   res.redirect(`/posts/${post.id}#comentar`);
 });
 
@@ -303,6 +305,7 @@ app.post('/u/:id/medalha', exigePapel('professor'), (req, res) => {
     tipo.id,
     texto(req.body.mensagem, 200),
   );
+  pontos.registrarConquistas(aluno.id);
   res.redirect(`/u/${aluno.id}?ok=medalha`);
 });
 

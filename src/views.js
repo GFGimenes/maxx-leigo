@@ -140,7 +140,8 @@ function telaCadastrar({ erro, dados = {} }) {
 }
 
 // ---------- Feed ----------
-function cartaoPost(p, voltar) {
+// noFeed = true: mostra os últimos comentários e uma caixa para comentar ali mesmo.
+function cartaoPost(p, voltar, noFeed = false) {
   return html`<article class="post" id="post-${p.id}">
   <header class="post-topo">${linkUsuario(p)}<span class="tempo">${tempoRelativo(p.criado_em)}</span></header>
   ${
@@ -158,12 +159,74 @@ function cartaoPost(p, voltar) {
   <div class="post-info">
     <strong>${plural(p.n_curtidas, 'curtida', 'curtidas')}</strong>
     ${p.imagem && p.legenda ? html`<p class="legenda"><a href="/u/${p.usuario_id}"><strong>${p.nome}</strong></a> ${p.legenda}</p>` : ''}
-    ${p.n_comentarios > 0 ? html`<a class="muted" href="/posts/${p.id}">Ver ${plural(p.n_comentarios, 'comentário', 'comentários')}</a>` : ''}
+    ${
+      noFeed
+        ? comentariosNoFeed(p, voltar)
+        : p.n_comentarios > 0
+          ? html`<a class="muted" href="/posts/${p.id}">Ver ${plural(p.n_comentarios, 'comentário', 'comentários')}</a>`
+          : ''
+    }
   </div>
 </article>`;
 }
 
-function feed({ posts, avisoFixado, pagina, temMais }) {
+function comentariosNoFeed(p, voltar) {
+  const ultimos = p.ultimos_comentarios || [];
+  return html`${
+    p.n_comentarios > ultimos.length
+      ? html`<a class="muted" href="/posts/${p.id}">Ver todos os ${p.n_comentarios} comentários</a>`
+      : ''
+  }
+  ${ultimos.map(
+    (c) => html`<p class="comentario-curto"><a href="/u/${c.usuario_id}"><strong>${c.nome}</strong></a> ${selo(c.papel)} ${c.texto}</p>`,
+  )}
+  <form method="post" action="/posts/${p.id}/comentar" class="comentar-feed">
+    <input type="hidden" name="voltar" value="${voltar}">
+    <input name="texto" placeholder="Adicione um comentário…" required maxlength="500" aria-label="Comentar no post de ${p.nome}">
+    <button class="btn-link">Publicar</button>
+  </form>`;
+}
+
+// Cartão de "fulano ganhou uma medalha" no feed.
+function cartaoMedalha(m) {
+  const primeiroNome = m.nome.split(' ')[0];
+  return html`<article class="post evento evento-medalha" id="medalha-${m.id}">
+  <header class="post-topo">${linkUsuario(m)}<span class="tempo">${tempoRelativo(m.criado_em)}</span></header>
+  <div class="evento-corpo">
+    <span class="evento-emoji" aria-hidden="true">${m.emoji}</span>
+    <p class="evento-rotulo">🏅 Medalha de professor</p>
+    <h2>${primeiroNome} ganhou <span class="evento-destaque">${m.medalha}</span></h2>
+    <p class="muted">entregue por ${
+      m.professor_id ? html`<a href="/u/${m.professor_id}">${m.professor_nome}</a>` : 'um(a) professor(a)'
+    } · <span class="pts">+${m.pontos} pts</span></p>
+    ${m.mensagem ? html`<blockquote>“${m.mensagem}”</blockquote>` : ''}
+    <a class="btn btn-sec" href="/u/${m.usuario_id}">Ver perfil de ${primeiroNome}</a>
+  </div>
+</article>`;
+}
+
+// Cartão de "fulano desbloqueou uma conquista" no feed.
+function cartaoConquista(c) {
+  const primeiroNome = c.nome.split(' ')[0];
+  return html`<article class="post evento evento-conquista" id="conquista-${c.id}">
+  <header class="post-topo">${linkUsuario(c)}<span class="tempo">${tempoRelativo(c.criado_em)}</span></header>
+  <div class="evento-corpo">
+    <span class="evento-emoji" aria-hidden="true">${c.info.emoji}</span>
+    <p class="evento-rotulo">✨ Nova conquista</p>
+    <h2>${primeiroNome} desbloqueou <span class="evento-destaque">${c.info.nome}</span></h2>
+    <p class="muted">${c.info.descricao} · <span class="pts">+${c.info.bonus} pts</span></p>
+    <a class="btn btn-sec" href="/u/${c.usuario_id}">Ver conquistas de ${primeiroNome}</a>
+  </div>
+</article>`;
+}
+
+function feed({ itens, avisoFixado, pagina, temMais }) {
+  const voltar = pagina > 1 ? `/?pagina=${pagina}` : '/';
+  const cartao = {
+    post: (p) => cartaoPost(p, voltar, true),
+    medalha: cartaoMedalha,
+    conquista: cartaoConquista,
+  };
   return html`
   ${
     avisoFixado
@@ -171,9 +234,9 @@ function feed({ posts, avisoFixado, pagina, temMais }) {
       : ''
   }
   ${
-    posts.length === 0
+    itens.length === 0
       ? html`<section class="cartao vazio"><p>Nenhum post ainda.</p><a class="btn" href="/novo">Faça o primeiro post</a></section>`
-      : posts.map((p) => cartaoPost(p, '/'))
+      : itens.map((i) => cartao[i.tipo](i.dados))
   }
   <div class="paginacao">
     ${pagina > 1 ? html`<a class="btn btn-sec" href="/?pagina=${pagina - 1}">‹ Mais recentes</a>` : ''}
