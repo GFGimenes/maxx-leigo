@@ -110,6 +110,9 @@ const { SQL_POST } = feed;
 // ---------- App ----------
 const app = express();
 app.disable('x-powered-by');
+// Quando o app roda atrás de um túnel ou proxy na mesma máquina, usa o IP real do visitante
+// (para o limite de tentativas do código da banca não juntar todo mundo num IP só).
+app.set('trust proxy', 'loopback');
 app.use(express.urlencoded({ extended: false, limit: '100kb' }));
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
@@ -167,8 +170,8 @@ app.post('/cadastrar', (req, res) => {
   if (erro) return enviar(req, res, { titulo: 'Cadastrar', status: 400, conteudo: v.telaCadastrar({ erro, dados }) });
 
   const { lastInsertRowid } = db
-    .prepare('INSERT INTO usuarios (nome, email, senha_hash, curso) VALUES (?, ?, ?, ?)')
-    .run(dados.nome, dados.email, hashSenha(senha), dados.curso);
+    .prepare('INSERT INTO usuarios (nome, email, senha_hash, curso, papel) VALUES (?, ?, ?, ?, ?)')
+    .run(dados.nome, dados.email, hashSenha(senha), dados.curso, config.DOMINIOS_PROFESSORES.includes(dominio) ? 'professor' : 'aluno');
   iniciarSessao(res, Number(lastInsertRowid));
   res.redirect('/');
 });

@@ -112,6 +112,9 @@ if (db.prepare('SELECT COUNT(*) AS n FROM tipos_medalha').get().n === 0) {
 }
 
 if (!db.prepare("SELECT 1 FROM usuarios WHERE papel = 'admin'").get()) {
+  if (process.env.NODE_ENV === 'production' && !process.env.ADMIN_SENHA) {
+    throw new Error('Defina a variável ADMIN_SENHA antes de colocar o Maxx no ar (a senha padrão é pública).');
+  }
   db.prepare("INSERT INTO usuarios (nome, email, senha_hash, papel, bio) VALUES (?, ?, ?, 'admin', ?)").run(
     config.FACULDADE,
     config.ADMIN_EMAIL,

@@ -54,8 +54,21 @@ A tela de entrar passa a mostrar a caixa **Banca do TCC**: é só digitar o cód
 
 ### Como liberar um professor
 
+Quem se cadastra com e-mail `@prof.unieduk.com.br` já entra como professor (domínios em `DOMINIOS_PROFESSORES`, no `src/config.js`). Para os outros:
+
 1. O professor cria a conta normalmente pelo site.
 2. Entre com a conta da faculdade, clique em **Administração**, mude o papel dele para `professor` e salve.
+
+## Colocar no ar (servidor grátis da Oracle Cloud)
+
+Com um servidor Ubuntu na nuvem (por exemplo o "Always Free" da Oracle, com as portas 80 e 443 liberadas), rode no PowerShell, dentro desta pasta:
+
+```
+powershell -ExecutionPolicy Bypass -File scripts\publicar.ps1 -IP <ip-do-servidor> -Chave "<caminho-da-chave-ssh>"
+```
+
+Na primeira vez ele pede a senha da conta da faculdade e o código da banca (opcional). No final mostra o link, no formato `https://maxx.<ip-com-tracos>.sslip.io`.
+Para atualizar depois de mudar o código, rode o mesmo comando: as contas, posts e fotos ficam guardados no servidor em `/var/lib/maxx`.
 
 ## Como funcionam os pontos
 

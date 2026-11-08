@@ -59,16 +59,16 @@ test('fluxo completo', async () => {
   assert.equal((await anon.get('/ranking')).local, '/entrar');
 
   // E-mail de fora da faculdade é recusado.
-  const fora = await anon.post('/cadastrar', { nome: 'Fulano', email: 'fulano@gmail.com', curso: 'Direito', senha: 'senha12345' });
+  const fora = await anon.post('/cadastrar', { nome: 'Fulano', email: 'fulano@gmail.com', curso: 'Medicina', senha: 'senha12345' });
   assert.equal(fora.status, 400);
   assert.match(fora.html, /e-mail da faculdade/);
 
-  const ana = await cadastrar('Ana Souza', 'ana@unimax.edu.br', 'Direito');
-  const bruno = await cadastrar('Bruno Lima', 'bruno@unimax.edu.br', 'Psicologia');
-  const prof = await cadastrar('Prof. Carla', 'carla@unimax.edu.br', 'Direito');
+  const ana = await cadastrar('Ana Souza', 'ana@unimax.edu.br', 'Medicina');
+  const bruno = await cadastrar('Bruno Lima', 'bruno@unimax.edu.br', 'Administração');
+  const prof = await cadastrar('Prof. Carla', 'carla@unimax.edu.br', 'Medicina');
 
   // E-mail repetido é recusado.
-  const repetido = await anon.post('/cadastrar', { nome: 'Ana', email: 'ANA@unimax.edu.br', curso: 'Direito', senha: 'senha12345' });
+  const repetido = await anon.post('/cadastrar', { nome: 'Ana', email: 'ANA@unimax.edu.br', curso: 'Medicina', senha: 'senha12345' });
   assert.match(repetido.html, /Já existe uma conta/);
 
   // Ana publica um post de texto e um com imagem.
@@ -179,12 +179,12 @@ test('fluxo completo', async () => {
   // Professores não têm troféus.
   assert.equal((await ana.get('/u/4/trofeus')).status, 404);
 
-  // Ranking por curso: Psicologia só tem o Bruno; professores não aparecem.
-  const psico = await ana.get('/ranking?curso=Psicologia');
+  // Ranking por curso: Administração só tem o Bruno; professores não aparecem.
+  const psico = await ana.get('/ranking?curso=Administração');
   assert.match(psico.html, /Bruno Lima/);
   assert.ok(!psico.html.includes('Ana Souza'));
   assert.ok(!ranking.html.includes('Prof. Carla</strong>'));
-  assert.match(psico.html, /Você é de <strong>Direito<\/strong>[\s\S]*Ver o ranking do seu curso/);
+  assert.match(psico.html, /Você é de <strong>Medicina<\/strong>[\s\S]*Ver o ranking do seu curso/);
 
   // Sua posição: Ana lidera; Bruno vê quanto falta para passar.
   assert.match(ranking.html, /1º<\/strong><span>de 2 no geral/);
@@ -193,10 +193,10 @@ test('fluxo completo', async () => {
   const rankingBruno = (await bruno.get('/ranking')).html;
   assert.match(rankingBruno, /Faltam <strong>109 pontos<\/strong> para passar Ana e subir para o 1º lugar/);
   // Abas: Geral e um por curso, com o curso do aluno primeiro.
-  assert.match(rankingBruno, /Geral <small>2[\s\S]*Psicologia \(meu curso\) <small>1[\s\S]*Administração <small>0/);
+  assert.match(rankingBruno, /Geral <small>2[\s\S]*Administração \(meu curso\) <small>1[\s\S]*Ciência da Computação <small>0/);
   // Líderes de cada curso, só no geral.
-  assert.match(ranking.html, /Líderes de cada curso[\s\S]*Direito[\s\S]*🥇 Ana[\s\S]*Psicologia[\s\S]*🥇 Bruno/);
-  assert.match(ranking.html, /6 cursos ainda não têm alunos/);
+  assert.match(ranking.html, /Líderes de cada curso[\s\S]*Administração[\s\S]*🥇 Bruno[\s\S]*Medicina[\s\S]*🥇 Ana/);
+  assert.match(ranking.html, /2 cursos ainda não têm alunos/);
   assert.ok(!psico.html.includes('Líderes de cada curso'));
   // Professores veem o ranking, mas não participam.
   assert.match((await prof.get('/ranking')).html, /só alunos participam/);
@@ -209,6 +209,17 @@ test('fluxo completo', async () => {
   // Sair encerra a sessão.
   await ana.post('/sair');
   assert.equal((await ana.get('/')).local, '/entrar');
+});
+
+test('e-mail de professor já entra como professor(a)', async () => {
+  const perfilProprio = async (c) => {
+    const id = (await c.get('/')).html.split('nav-inferior')[1].match(/href="\/u\/(\d+)"/)[1];
+    return (await c.get(`/u/${id}`)).html;
+  };
+  const prof = await cadastrar('Prof. Davi', 'davi@prof.unieduk.com.br', 'Medicina');
+  assert.match(await perfilProprio(prof), /Prof\. Davi[\s\S]*selo-prof/);
+  const aluno = await cadastrar('Eva Lima', 'eva@al.unieduk.com.br', 'Medicina');
+  assert.ok(!(await perfilProprio(aluno)).includes('selo-prof'));
 });
 
 test('acesso da banca', async () => {
@@ -236,7 +247,7 @@ test('acesso da banca', async () => {
   assert.equal((await fac.get('/admin')).status, 200);
 
   // Ninguém consegue se cadastrar com o e-mail de uma conta da banca, nem entrar com senha.
-  const cad = await anon.post('/cadastrar', { nome: 'Xavier', email: 'banca.aluno@unimax.edu.br', curso: 'Direito', senha: 'senha12345' });
+  const cad = await anon.post('/cadastrar', { nome: 'Xavier', email: 'banca.aluno@unimax.edu.br', curso: 'Medicina', senha: 'senha12345' });
   assert.match(cad.html, /Já existe uma conta/);
   assert.equal((await anon.post('/entrar', { email: 'banca.aluno@unimax.edu.br', senha: '!' })).status, 401);
 
