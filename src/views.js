@@ -126,7 +126,7 @@ ${banca ? caixaBanca(erroBanca) : ''}`;
 }
 
 function telaCadastrar({ erro, dados = {} }) {
-  const dominio = config.DOMINIOS_PERMITIDOS[0];
+  const dominio = config.DOMINIOS_PERMITIDOS.join(' ou @');
   return html`<section class="cartao auth">
   <h1 class="marca-grande">${config.NOME_APP}</h1>
   <p class="muted">Crie sua conta com o e-mail @${dominio}</p>

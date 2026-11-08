@@ -6,18 +6,16 @@ module.exports = {
   FACULDADE: 'UniMax',
 
   // Só e-mails destes domínios podem criar conta.
-  DOMINIOS_PERMITIDOS: ['unimax.edu.br'],
+  DOMINIOS_PERMITIDOS: ['unimax.edu.br', 'al.unieduk.com.br', 'prof.unieduk.com.br'],
+  // Quem se cadastra com e-mail destes domínios já entra como professor(a).
+  DOMINIOS_PROFESSORES: ['prof.unieduk.com.br'],
 
   // Cursos disponíveis no cadastro e no ranking por curso.
   CURSOS: [
     'Administração',
-    'Arquitetura e Urbanismo',
     'Ciência da Computação',
-    'Direito',
-    'Enfermagem',
-    'Engenharia Civil',
+    'Inteligência Artificial',
     'Medicina',
-    'Psicologia',
   ],
 
   // Conta da faculdade criada automaticamente na primeira vez que o app roda.

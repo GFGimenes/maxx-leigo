@@ -8,9 +8,14 @@ const { hashSenha } = require('./senha');
 fs.mkdirSync(config.PASTA_DADOS, { recursive: true });
 const db = new DatabaseSync(path.join(config.PASTA_DADOS, 'maxx.db'));
 
+// No Azure App Service a pasta de dados fica num disco de rede, onde o modo WAL do SQLite
+// não é seguro; lá usamos o modo tradicional (DELETE).
+const NO_AZURE = Boolean(process.env.WEBSITE_SITE_NAME);
+db.exec(`PRAGMA journal_mode = ${NO_AZURE ? 'DELETE' : 'WAL'};`);
+db.exec('PRAGMA busy_timeout = 5000;');
+
 db.exec(`
 PRAGMA foreign_keys = ON;
-PRAGMA journal_mode = WAL;
 
 CREATE TABLE IF NOT EXISTS usuarios (
   id INTEGER PRIMARY KEY,
@@ -112,6 +117,9 @@ if (db.prepare('SELECT COUNT(*) AS n FROM tipos_medalha').get().n === 0) {
 }
 
 if (!db.prepare("SELECT 1 FROM usuarios WHERE papel = 'admin'").get()) {
+  if (process.env.NODE_ENV === 'production' && !process.env.ADMIN_SENHA) {
+    throw new Error('Defina a variável ADMIN_SENHA antes de colocar o Maxx no ar (a senha padrão é pública).');
+  }
   db.prepare("INSERT INTO usuarios (nome, email, senha_hash, papel, bio) VALUES (?, ?, ?, 'admin', ?)").run(
     config.FACULDADE,
     config.ADMIN_EMAIL,

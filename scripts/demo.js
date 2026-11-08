@@ -17,22 +17,22 @@ const criar = (nome, email, curso, papel = 'aluno', bio = '') =>
   );
 
 const marina = criar('Marina Albuquerque', 'prof.marina@unimax.edu.br', 'Ciência da Computação', 'professor', 'Professora de Algoritmos');
-const roberto = criar('Roberto Nunes', 'prof.roberto@unimax.edu.br', 'Direito', 'professor', 'Professor de Direito Civil');
+const roberto = criar('Roberto Nunes', 'prof.roberto@unimax.edu.br', 'Medicina', 'professor', 'Professor de Anatomia');
 const alunos = [
   criar('Ana Beatriz Costa', 'ana.costa@unimax.edu.br', 'Ciência da Computação', 'aluno', 'Dev em formação 💻'),
   criar('Lucas Ferreira', 'lucas.ferreira@unimax.edu.br', 'Ciência da Computação'),
-  criar('Júlia Ramos', 'julia.ramos@unimax.edu.br', 'Direito', 'aluno', 'Futura advogada ⚖️'),
-  criar('Pedro Henrique', 'pedro.h@unimax.edu.br', 'Direito'),
-  criar('Camila Oliveira', 'camila.o@unimax.edu.br', 'Psicologia', 'aluno', 'Psico | café | livros'),
-  criar('Rafael Torres', 'rafael.t@unimax.edu.br', 'Engenharia Civil'),
+  criar('Júlia Ramos', 'julia.ramos@unimax.edu.br', 'Medicina', 'aluno', 'Futura médica 🩺'),
+  criar('Pedro Henrique', 'pedro.h@unimax.edu.br', 'Medicina'),
+  criar('Camila Oliveira', 'camila.o@unimax.edu.br', 'Inteligência Artificial', 'aluno', 'IA | café | livros'),
+  criar('Rafael Torres', 'rafael.t@unimax.edu.br', 'Administração'),
 ];
 
 const textos = [
   'Primeiro hackathon da UniMax foi incrível! Nosso time ficou em 2º lugar 🚀',
-  'Alguém tem o resumo da aula de Direito Constitucional de ontem?',
+  'Alguém tem o resumo da aula de Anatomia de ontem?',
   'Biblioteca lotada em semana de provas… boa sorte a todos! 📚',
   'Grupo de estudos de Cálculo toda quinta, 18h, sala 204. Chega mais!',
-  'Visita técnica na obra do novo prédio hoje 🏗️',
+  'Visita técnica no hospital universitário hoje 🏥',
   'Palestra sobre saúde mental no auditório foi sensacional 💜',
   'Quem mais vai na festa junina da faculdade?',
   'Terminei meu primeiro app em React!',
