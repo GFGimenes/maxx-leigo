@@ -115,8 +115,29 @@ test('fluxo completo', async () => {
   assert.equal((await admin.post('/entrar', { email: 'admin@unimax.edu.br', senha: 'senha-admin-teste' })).status, 302);
   assert.equal((await admin.post('/admin/usuarios/4/papel', { papel: 'professor' })).status, 302);
   await admin.post('/mural', { titulo: 'Semana de provas', texto: 'Provas de 10 a 14/11.', fixado: '1' });
-  assert.match((await ana.get('/')).html, /Semana de provas/);
-  assert.match((await ana.get('/mural')).html, /Provas de 10 a 14\/11/);
+  const feedAna = (await ana.get('/')).html;
+  assert.match(feedAna, /Semana de provas/);
+  // O menu avisa que tem 1 aviso novo; ao abrir o mural ele aparece como "Novo" e depois some.
+  assert.match(feedAna, /class="bolinha" aria-hidden="true">1</);
+  const muralAna = (await ana.get('/mural')).html;
+  assert.match(muralAna, /Provas de 10 a 14\/11/);
+  assert.match(muralAna, /selo-novo/);
+  assert.ok(!muralAna.includes('class="bolinha"'));
+  assert.ok(!(await ana.get('/')).html.includes('class="bolinha"'));
+  assert.ok(!(await ana.get('/mural')).html.includes('selo-novo'));
+
+  // A professora também publica no mural (sem poder fixar), com o nome dela no aviso.
+  assert.equal((await prof.post('/mural', { titulo: 'Aula de quinta cancelada', texto: 'Reposição na sexta.', fixado: '1' })).local, '/mural#aviso-2');
+  const muralBruno = (await bruno.get('/mural')).html;
+  assert.match(muralBruno, /Prof. Carla[\s\S]*Aula de quinta cancelada/);
+  assert.equal(muralBruno.match(/📌 Fixado/g).length, 1);
+  assert.match((await ana.get('/')).html, /class="bolinha" aria-hidden="true">1</);
+  // Aluno não apaga aviso; a professora só apaga os dela; a faculdade apaga qualquer um.
+  assert.equal((await bruno.post('/mural/2/apagar')).status, 403);
+  assert.equal((await prof.post('/mural/1/apagar')).status, 403);
+  assert.equal((await prof.post('/mural/1/fixar')).status, 403);
+  assert.equal((await prof.post('/mural/2/apagar')).status, 302);
+  assert.ok(!(await ana.get('/mural')).html.includes('Aula de quinta cancelada'));
 
   // Professora dá medalha para a Ana (id 2) e não pode dar para outra professora.
   assert.equal((await prof.post('/u/2/medalha', { tipo_id: '1', mensagem: 'Excelente seminário' })).local, '/u/2?ok=medalha');

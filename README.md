@@ -9,7 +9,7 @@ A rede social da **UniMax**: um "Instagram" só para alunos e professores da fac
 - **Pontos e conquistas**: quem posta, comenta e recebe curtidas ganha pontos, e desbloqueia conquistas com bônus.
 - **Medalhas de professores**: professores entregam medalhas (com mensagem) que valem pontos.
 - **Ranking geral e por curso** (só alunos participam).
-- **Mural** de avisos oficiais da faculdade, com opção de fixar no topo.
+- **Mural de avisos**: a faculdade e os professores publicam avisos, e todos leem. Cada aviso mostra quem publicou, e o ícone do Mural mostra quantos avisos novos a pessoa ainda não viu. Só a faculdade fixa avisos no topo. Cada professor apaga só os próprios avisos, e a faculdade pode apagar qualquer um.
 - **Administração**: a conta da faculdade define quem é professor ou administrador.
 
 ## Como rodar no seu computador

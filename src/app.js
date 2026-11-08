@@ -72,8 +72,17 @@ function iniciarSessao(res, usuarioId) {
 }
 
 // ---------- Helpers ----------
+// Quantos avisos do mural a pessoa ainda não viu (os que ela mesma publicou não contam).
+function avisosNovos(usuario) {
+  if (!usuario) return 0;
+  return db
+    .prepare('SELECT COUNT(*) AS n FROM avisos WHERE id > ? AND (autor_id IS NULL OR autor_id != ?)')
+    .get(usuario.mural_visto_id, usuario.id).n;
+}
+
 function enviar(req, res, { titulo, ativo, conteudo, status = 200 }) {
-  res.status(status).type('html').send(String(v.layout({ usuario: req.usuario, titulo, ativo, conteudo })));
+  const novos = avisosNovos(req.usuario);
+  res.status(status).type('html').send(String(v.layout({ usuario: req.usuario, titulo, ativo, conteudo, avisosNovos: novos })));
 }
 
 function exigeLogin(req, res, next) {
@@ -347,25 +356,46 @@ app.get('/ranking', (req, res) => {
 });
 
 // ----- Mural -----
-const listarAvisos = () => db.prepare('SELECT * FROM avisos ORDER BY fixado DESC, id DESC').all();
+// A faculdade e os professores publicam avisos; todo mundo lê.
+// Só a faculdade fixa avisos no topo. Cada um apaga os próprios (a faculdade apaga qualquer um).
+const listarAvisos = () =>
+  db
+    .prepare(
+      `SELECT a.*, a.autor_id AS usuario_id, u.nome, u.papel, u.avatar
+       FROM avisos a LEFT JOIN usuarios u ON u.id = a.autor_id
+       ORDER BY a.fixado DESC, a.id DESC`,
+    )
+    .all();
 
-app.get('/mural', (req, res) =>
-  enviar(req, res, { titulo: 'Mural', ativo: 'mural', conteudo: v.mural({ avisos: listarAvisos(), usuario: req.usuario }) }),
-);
+const podeApagarAviso = (usuario, aviso) => usuario.papel === 'admin' || aviso.autor_id === usuario.id;
 
-app.post('/mural', exigePapel('admin'), (req, res) => {
+function telaMural(req, res, { erro, status } = {}) {
+  const avisos = listarAvisos();
+  const vistoAte = req.usuario.mural_visto_id;
+  for (const a of avisos) {
+    a.novo = a.id > vistoAte && a.autor_id !== req.usuario.id;
+    a.podeApagar = podeApagarAviso(req.usuario, a);
+  }
+  // Abriu o mural: tudo o que está nele passa a contar como lido.
+  const ultimo = Math.max(vistoAte, ...avisos.map((a) => a.id));
+  if (ultimo > vistoAte) {
+    db.prepare('UPDATE usuarios SET mural_visto_id = ? WHERE id = ?').run(ultimo, req.usuario.id);
+    req.usuario.mural_visto_id = ultimo;
+  }
+  enviar(req, res, { titulo: 'Mural', ativo: 'mural', status, conteudo: v.mural({ avisos, usuario: req.usuario, erro }) });
+}
+
+app.get('/mural', (req, res) => telaMural(req, res));
+
+app.post('/mural', exigePapel('admin', 'professor'), (req, res) => {
   const titulo = texto(req.body.titulo, 120);
   const t = texto(req.body.texto, 5000);
-  if (!titulo || !t) {
-    return enviar(req, res, {
-      titulo: 'Mural',
-      ativo: 'mural',
-      status: 400,
-      conteudo: v.mural({ avisos: listarAvisos(), usuario: req.usuario, erro: 'Preencha o título e o aviso.' }),
-    });
-  }
-  db.prepare('INSERT INTO avisos (autor_id, titulo, texto, fixado) VALUES (?, ?, ?, ?)').run(req.usuario.id, titulo, t, req.body.fixado ? 1 : 0);
-  res.redirect('/mural');
+  if (!titulo || !t) return telaMural(req, res, { erro: 'Preencha o título e o aviso.', status: 400 });
+  const fixado = req.usuario.papel === 'admin' && req.body.fixado ? 1 : 0;
+  const { lastInsertRowid } = db
+    .prepare('INSERT INTO avisos (autor_id, titulo, texto, fixado) VALUES (?, ?, ?, ?)')
+    .run(req.usuario.id, titulo, t, fixado);
+  res.redirect(`/mural#aviso-${lastInsertRowid}`);
 });
 
 app.post('/mural/:id/fixar', exigePapel('admin'), (req, res) => {
@@ -373,8 +403,11 @@ app.post('/mural/:id/fixar', exigePapel('admin'), (req, res) => {
   res.redirect('/mural');
 });
 
-app.post('/mural/:id/apagar', exigePapel('admin'), (req, res) => {
-  db.prepare('DELETE FROM avisos WHERE id = ?').run(idParam(req));
+app.post('/mural/:id/apagar', exigePapel('admin', 'professor'), (req, res) => {
+  const aviso = db.prepare('SELECT * FROM avisos WHERE id = ?').get(idParam(req));
+  if (!aviso) throw new ErroUsuario('Esse aviso não existe mais.', 404);
+  if (!podeApagarAviso(req.usuario, aviso)) throw new ErroUsuario('Você só pode apagar os avisos que você publicou.', 403);
+  db.prepare('DELETE FROM avisos WHERE id = ?').run(aviso.id);
   res.redirect('/mural');
 });
 

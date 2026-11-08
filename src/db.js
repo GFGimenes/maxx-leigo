@@ -96,6 +96,15 @@ CREATE TABLE IF NOT EXISTS avisos (
 );
 `);
 
+// Mural: guarda o último aviso que cada pessoa já viu, para mostrar quantos são novos.
+// Em bancos antigos, quem já tinha conta começa com tudo marcado como lido.
+if (!db.prepare('PRAGMA table_info(usuarios)').all().some((c) => c.name === 'mural_visto_id')) {
+  db.exec(`
+    ALTER TABLE usuarios ADD COLUMN mural_visto_id INTEGER NOT NULL DEFAULT 0;
+    UPDATE usuarios SET mural_visto_id = (SELECT IFNULL(MAX(id), 0) FROM avisos);
+  `);
+}
+
 // Dados iniciais: tipos de medalha e conta da faculdade.
 if (db.prepare('SELECT COUNT(*) AS n FROM tipos_medalha').get().n === 0) {
   const inserir = db.prepare('INSERT INTO tipos_medalha (nome, emoji, pontos, descricao) VALUES (?, ?, ?, ?)');
