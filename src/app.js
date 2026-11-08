@@ -368,7 +368,7 @@ app.get('/ranking', (req, res) => {
     titulo: 'Ranking',
     ativo: 'ranking',
     conteudo: v.ranking({
-      lista: pontos.ranking(curso),
+      ...pontos.rankings(),
       curso,
       usuario: req.usuario,
       tiposMedalha: db.prepare('SELECT * FROM tipos_medalha ORDER BY pontos DESC').all(),

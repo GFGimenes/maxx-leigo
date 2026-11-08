@@ -184,6 +184,22 @@ test('fluxo completo', async () => {
   assert.match(psico.html, /Bruno Lima/);
   assert.ok(!psico.html.includes('Ana Souza'));
   assert.ok(!ranking.html.includes('Prof. Carla</strong>'));
+  assert.match(psico.html, /Você é de <strong>Direito<\/strong>[\s\S]*Ver o ranking do seu curso/);
+
+  // Sua posição: Ana lidera; Bruno vê quanto falta para passar.
+  assert.match(ranking.html, /1º<\/strong><span>de 2 no geral/);
+  assert.match(ranking.html, /1º<\/strong><span>de 1 no curso/);
+  assert.match(ranking.html, /liderança<\/strong>, 108 pontos à frente de Bruno/);
+  const rankingBruno = (await bruno.get('/ranking')).html;
+  assert.match(rankingBruno, /Faltam <strong>109 pontos<\/strong> para passar Ana e subir para o 1º lugar/);
+  // Abas: Geral e um por curso, com o curso do aluno primeiro.
+  assert.match(rankingBruno, /Geral <small>2[\s\S]*Psicologia \(meu curso\) <small>1[\s\S]*Administração <small>0/);
+  // Líderes de cada curso, só no geral.
+  assert.match(ranking.html, /Líderes de cada curso[\s\S]*Direito[\s\S]*🥇 Ana[\s\S]*Psicologia[\s\S]*🥇 Bruno/);
+  assert.match(ranking.html, /6 cursos ainda não têm alunos/);
+  assert.ok(!psico.html.includes('Líderes de cada curso'));
+  // Professores veem o ranking, mas não participam.
+  assert.match((await prof.get('/ranking')).html, /só alunos participam/);
 
   // Bruno não pode apagar post da Ana; a Ana pode.
   assert.equal((await bruno.post('/posts/1/apagar')).status, 403);

@@ -544,27 +544,121 @@ function editarPerfil({ usuario, erro }) {
 }
 
 // ---------- Ranking ----------
-function ranking({ lista, curso, usuario, tiposMedalha }) {
-  const trofeu = (pos) => ({ 1: '🥇', 2: '🥈', 3: '🥉' })[pos] || `${pos}º`;
+const medalhaPosicao = (pos) => ({ 1: '🥇', 2: '🥈', 3: '🥉' })[pos] || `${pos}º`;
+const primeiroNome = (nome) => nome.split(' ')[0];
+const linkRanking = (curso) => (curso ? `/ranking?curso=${encodeURIComponent(curso)}` : '/ranking');
+
+// Abas: Geral, o curso do aluno e depois os outros cursos.
+function abasRanking({ curso, porCurso, usuario, totalGeral }) {
+  const meuCurso = usuario.papel === 'aluno' ? usuario.curso : '';
+  const cursos = [...config.CURSOS].sort((a, b) => (b === meuCurso) - (a === meuCurso));
+  const aba = (valor, rotulo, qtd) =>
+    html`<a href="${linkRanking(valor)}" class="aba ${valor === curso ? 'ativa' : ''}" ${valor === curso ? raw('aria-current="page"') : ''}>${rotulo} <small>${qtd}</small></a>`;
+  return html`<nav class="abas" aria-label="Escolha o ranking">
+  ${aba('', 'Geral', totalGeral)}
+  ${cursos.map((c) => aba(c, c === meuCurso ? `${c} (meu curso)` : c, porCurso[c]?.length || 0))}
+</nav>`;
+}
+
+// Onde o aluno está e quanto falta para subir.
+function suaPosicao({ lista, geral, porCurso, curso, usuario }) {
+  if (usuario.papel !== 'aluno') return html`<p class="muted">Professores e a faculdade acompanham o ranking, mas só alunos participam.</p>`;
+  const noGeral = geral.find((a) => a.id === usuario.id);
+  const meuCurso = porCurso[usuario.curso] || [];
+  const noCurso = meuCurso.find((a) => a.id === usuario.id);
+  if (!noGeral) return '';
+  const resumo = html`<div class="numeros numeros-3">
+    <div><strong>${fmt(noGeral.total)}</strong><span>seus pontos</span></div>
+    <a href="${linkRanking('')}"><strong>${noGeral.posicao}º</strong><span>de ${geral.length} no geral</span></a>
+    <a href="${linkRanking(usuario.curso)}"><strong>${noCurso ? `${noCurso.posicao}º` : '–'}</strong><span>de ${meuCurso.length} no curso</span></a>
+  </div>`;
+
+  const eu = lista.find((a) => a.id === usuario.id);
+  let frase;
+  if (!eu) {
+    frase = html`Você é de <strong>${usuario.curso}</strong>. <a href="${linkRanking(usuario.curso)}">Ver o ranking do seu curso ›</a>`;
+  } else if (lista.length === 1) {
+    frase = 'Você é o único aluno por aqui até agora.';
+  } else if (eu.posicao === 1) {
+    const segundo = lista.find((a) => a.total < eu.total);
+    const empatados = lista.filter((a) => a.posicao === 1).length;
+    frase = empatados > 1
+      ? html`🤝 Você divide a <strong>liderança</strong> com mais ${plural(empatados - 1, 'pessoa', 'pessoas')}. Qualquer ponto a mais e o 1º lugar é só seu!`
+      : html`👑 Você está na <strong>liderança</strong>${segundo ? html`, ${plural(eu.total - segundo.total, 'ponto', 'pontos')} à frente de ${primeiroNome(segundo.nome)}` : ''}!`;
+  } else {
+    // A pessoa logo acima: a última da lista com mais pontos.
+    const acima = lista.filter((a) => a.total > eu.total).at(-1);
+    const falta = acima.total - eu.total + 1;
+    frase = html`🎯 Faltam <strong>${plural(falta, 'ponto', 'pontos')}</strong> para passar ${primeiroNome(acima.nome)} e subir para o ${acima.posicao}º lugar.`;
+  }
+  return html`${resumo}<p class="sua-frase">${frase}</p>`;
+}
+
+function itemRanking(a, { usuario, mostrarCurso }) {
+  return html`<li class="${a.id === usuario.id ? 'eu' : ''} ${a.total === 0 ? 'zerado' : ''}">
+    <span class="pos">${medalhaPosicao(a.posicao)}</span>
+    <a href="/u/${a.id}" class="usuario-link">${avatar(a)}<span><strong>${a.nome}</strong>${a.id === usuario.id ? html` <span class="selo selo-oficial">Você</span>` : ''}${mostrarCurso ? html`<small>${a.curso}</small>` : ''}</span></a>
+    <span class="total">${fmt(a.total)} <small>pts</small></span>
+  </li>`;
+}
+
+function podio(top3, usuario) {
+  return html`<ol class="podio" aria-label="Pódio">
+  ${top3.map(
+    (a, i) => html`<li class="podio-${i + 1} ${a.id === usuario.id ? 'eu' : ''}">
+      <a href="/u/${a.id}">
+        ${avatar(a, i === 0 ? 'g' : 'm')}
+        <strong>${primeiroNome(a.nome)}</strong>
+        <small>${fmt(a.total)} pts</small>
+      </a>
+      <span class="degrau"><span aria-label="${a.posicao}º lugar">${medalhaPosicao(a.posicao)}</span></span>
+    </li>`,
+  )}
+</ol>`;
+}
+
+// No ranking geral: quem lidera cada curso.
+function lideresDosCursos(porCurso) {
+  const cursos = config.CURSOS.filter((c) => porCurso[c]?.length);
+  const vazios = config.CURSOS.length - cursos.length;
+  return html`<section class="cartao">
+  <h2>🎓 Líderes de cada curso</h2>
+  <ul class="lideres">
+    ${cursos.map((c) => {
+      const lista = porCurso[c];
+      const lideres = lista.filter((a) => a.posicao === 1);
+      return html`<li>
+        <a href="${linkRanking(c)}" class="lider-curso">
+          <span><strong>${c}</strong><small>${plural(lista.length, 'aluno', 'alunos')}</small></span>
+          <span class="lider-nome">🥇 ${lideres.map((a) => primeiroNome(a.nome)).join(' e ')} <small>${fmt(lideres[0].total)} pts</small></span>
+          <span class="seta" aria-hidden="true">›</span>
+        </a>
+      </li>`;
+    })}
+  </ul>
+  ${vazios ? html`<p class="muted">${plural(vazios, 'curso ainda não tem', 'cursos ainda não têm')} alunos no Maxx.</p>` : ''}
+</section>`;
+}
+
+function ranking({ geral, porCurso, curso, usuario, tiposMedalha }) {
+  const lista = curso ? porCurso[curso] || [] : geral;
+  const comPodio = lista.length >= 3 && lista[0].total > 0;
+  const resto = comPodio ? lista.slice(3) : lista;
   return html`<section class="cartao">
   <h1>🏆 Ranking</h1>
-  <form method="get" action="/ranking" class="filtro">
-    <select name="curso" onchange="this.form.submit()" aria-label="Filtrar por curso">
-      <option value="">Geral (todos os cursos)</option>${opcoesCurso(curso)}
-    </select>
-    <noscript><button class="btn">Ver</button></noscript>
-  </form>
-  ${lista.length === 0 ? html`<p class="muted">Ninguém pontuou ainda${curso ? ' neste curso' : ''}.</p>` : ''}
-  <ol class="ranking">
-    ${lista.map(
-      (a) => html`<li class="${a.id === usuario.id ? 'eu' : ''}">
-        <span class="pos">${trofeu(a.posicao)}</span>
-        <a href="/u/${a.id}" class="usuario-link">${avatar(a)}<span><strong>${a.nome}</strong>${curso ? '' : html`<small>${a.curso}</small>`}</span></a>
-        <span class="total">${fmt(a.total)} <small>pts</small></span>
-      </li>`,
-    )}
-  </ol>
+  <p class="muted">${curso ? html`Alunos de <strong>${curso}</strong>` : `Todos os alunos da ${config.FACULDADE}`}, pelos pontos ganhos no Maxx.</p>
+  ${abasRanking({ curso, porCurso, usuario, totalGeral: geral.length })}
+  ${suaPosicao({ lista, geral, porCurso, curso, usuario })}
 </section>
+
+<section class="cartao">
+  <h2>${curso || 'Geral'} <span class="contador">${plural(lista.length, 'aluno', 'alunos')}</span></h2>
+  ${lista.length === 0 ? html`<p class="muted">Nenhum aluno ${curso ? 'deste curso' : ''} entrou no Maxx ainda.</p>` : ''}
+  ${comPodio ? podio(lista.slice(0, 3), usuario) : ''}
+  ${resto.length ? html`<ol class="ranking">${resto.map((a) => itemRanking(a, { usuario, mostrarCurso: !curso }))}</ol>` : ''}
+</section>
+
+${curso ? '' : lideresDosCursos(porCurso)}
 
 <section class="cartao">
   <h2>Como ganhar pontos</h2>
