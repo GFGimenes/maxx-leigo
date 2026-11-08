@@ -24,6 +24,10 @@ module.exports = {
   ADMIN_EMAIL: process.env.ADMIN_EMAIL || 'admin@unimax.edu.br',
   ADMIN_SENHA: process.env.ADMIN_SENHA || 'unimax-admin',
 
+  // Acesso da banca do TCC (entrar sem cadastro, com código). Desligado se vazio.
+  // Ex.: CODIGO_BANCA=maxx2026 npm start
+  CODIGO_BANCA: process.env.CODIGO_BANCA || '',
+
   PORTA: Number(process.env.PORT) || 3000,
   PASTA_DADOS: process.env.MAXX_DADOS || path.join(__dirname, '..', 'dados'),
   TAMANHO_MAX_IMAGEM_MB: 5,
