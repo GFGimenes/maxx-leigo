@@ -72,6 +72,20 @@ CREATE TABLE IF NOT EXISTS medalhas (
 );
 CREATE INDEX IF NOT EXISTS idx_medalhas_aluno ON medalhas(aluno_id);
 
+-- Quando cada aluno desbloqueou cada conquista (para mostrar no feed).
+-- anunciar = 0: conquista antiga, registrada sem aparecer no feed.
+CREATE TABLE IF NOT EXISTS conquistas_alunos (
+  id INTEGER PRIMARY KEY,
+  aluno_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+  conquista TEXT NOT NULL,
+  anunciar INTEGER NOT NULL DEFAULT 1,
+  criado_em TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE (aluno_id, conquista)
+);
+
+CREATE INDEX IF NOT EXISTS idx_posts_data ON posts(criado_em);
+CREATE INDEX IF NOT EXISTS idx_medalhas_data ON medalhas(criado_em);
+
 CREATE TABLE IF NOT EXISTS avisos (
   id INTEGER PRIMARY KEY,
   autor_id INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,

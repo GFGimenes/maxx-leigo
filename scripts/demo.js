@@ -2,6 +2,7 @@
 // Uso: npm run demo   (todas as contas de exemplo usam a senha "senha1234")
 const db = require('../src/db');
 const { hashSenha } = require('../src/senha');
+const pontos = require('../src/pontos');
 
 if (db.prepare("SELECT 1 FROM usuarios WHERE email = 'prof.marina@unimax.edu.br'").get()) {
   console.log('Os dados de exemplo já foram criados.');
@@ -36,8 +37,13 @@ const textos = [
   'Quem mais vai na festa junina da faculdade?',
   'Terminei meu primeiro app em React!',
 ];
+// Posts espalhados nas últimas horas (o primeiro texto é o mais antigo).
 const posts = textos.map((t, i) =>
-  Number(db.prepare('INSERT INTO posts (usuario_id, legenda) VALUES (?, ?)').run(alunos[i % alunos.length], t).lastInsertRowid),
+  Number(
+    db
+      .prepare("INSERT INTO posts (usuario_id, legenda, criado_em) VALUES (?, ?, datetime('now', ?))")
+      .run(alunos[i % alunos.length], t, `-${(textos.length - i) * 3} hours`).lastInsertRowid,
+  ),
 );
 
 // Curtidas e comentários variados.
@@ -54,14 +60,27 @@ comentar(posts[3], alunos[0], 'Vou sim!');
 comentar(posts[5], alunos[2], 'Precisamos de mais eventos assim.');
 
 // Medalhas dos professores.
-const medalha = (aluno, prof, tipoNome, msg) => {
+const medalha = (aluno, prof, tipoNome, msg, quando) => {
   const tipo = db.prepare('SELECT id FROM tipos_medalha WHERE nome = ?').get(tipoNome);
-  db.prepare('INSERT INTO medalhas (aluno_id, professor_id, tipo_id, mensagem) VALUES (?, ?, ?, ?)').run(aluno, prof, tipo.id, msg);
+  db.prepare("INSERT INTO medalhas (aluno_id, professor_id, tipo_id, mensagem, criado_em) VALUES (?, ?, ?, ?, datetime('now', ?))").run(
+    aluno,
+    prof,
+    tipo.id,
+    msg,
+    quando,
+  );
 };
-medalha(alunos[0], marina, 'Projeto destaque', 'Projeto do hackathon impecável!');
-medalha(alunos[1], marina, 'Ajudou os colegas', 'Obrigada por ajudar a turma no laboratório.');
-medalha(alunos[2], roberto, 'Excelência acadêmica', 'Melhor nota da turma no júri simulado.');
-medalha(alunos[3], roberto, 'Participação em aula', '');
+medalha(alunos[0], marina, 'Projeto destaque', 'Projeto do hackathon impecável!', '-20 hours');
+medalha(alunos[1], marina, 'Ajudou os colegas', 'Obrigada por ajudar a turma no laboratório.', '-13 hours');
+medalha(alunos[2], roberto, 'Excelência acadêmica', 'Melhor nota da turma no júri simulado.', '-7 hours');
+medalha(alunos[3], roberto, 'Participação em aula', '', '-1 hours');
+
+// Conquistas aparecem no feed logo depois do que as desbloqueou.
+for (const a of alunos) pontos.registrarConquistas(a);
+db.exec(`
+  UPDATE conquistas_alunos SET criado_em = (SELECT MIN(criado_em) FROM posts WHERE usuario_id = aluno_id) WHERE conquista = 'primeiro_post';
+  UPDATE conquistas_alunos SET criado_em = (SELECT MIN(criado_em) FROM medalhas WHERE aluno_id = conquistas_alunos.aluno_id) WHERE conquista = 'medalhista';
+`);
 
 // Avisos no mural.
 const admin = db.prepare("SELECT id FROM usuarios WHERE papel = 'admin'").get().id;

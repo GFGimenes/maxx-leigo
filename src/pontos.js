@@ -49,4 +49,21 @@ function statsDoAluno(id) {
   return s;
 }
 
-module.exports = { ranking, statsDoAluno };
+// Registra as conquistas que o aluno acabou de desbloquear (para aparecerem no feed).
+// Conquistas já registradas são ignoradas; se o aluno perder uma depois
+// (ex.: apagou posts), o registro fica como histórico.
+function registrarConquistas(alunoId, anunciar = true) {
+  const row = db.prepare(SQL_STATS + ' AND u.id = ?').get(alunoId);
+  if (!row) return;
+  const inserir = db.prepare('INSERT OR IGNORE INTO conquistas_alunos (aluno_id, conquista, anunciar) VALUES (?, ?, ?)');
+  for (const c of calcular(row).conquistas) inserir.run(alunoId, c.id, anunciar ? 1 : 0);
+}
+
+// Na primeira vez com esta versão, registra as conquistas que os alunos já tinham,
+// sem anunciar no feed (senão o feed seria inundado de conquistas antigas).
+if (db.prepare('PRAGMA user_version').get().user_version < 1) {
+  for (const { id } of db.prepare("SELECT id FROM usuarios WHERE papel = 'aluno'").all()) registrarConquistas(id, false);
+  db.exec('PRAGMA user_version = 1');
+}
+
+module.exports = { ranking, statsDoAluno, registrarConquistas };

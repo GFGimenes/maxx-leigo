@@ -89,11 +89,19 @@ test('fluxo completo', async () => {
   assert.ok(!feed.html.includes('<script>alert(1)</script>'));
   assert.match(feed.html, /&lt;script&gt;/);
 
+  // A conquista do primeiro post aparece no feed (uma vez só, mesmo com 2 posts).
+  assert.match(feed.html, /Ana desbloqueou <span class="evento-destaque">Primeiro clique/);
+  assert.equal(feed.html.match(/Primeiro clique/g).length, 1);
+
   // Bruno curte e comenta os posts da Ana.
   await bruno.post('/posts/1/curtir', { voltar: '/' });
   await bruno.post('/posts/2/curtir', { voltar: 'https://site-malicioso.com' }).then((r) => assert.equal(r.local, '/#post-2'));
   await bruno.post('/posts/1/comentar', { texto: 'Bem-vinda!' });
   await bruno.post('/posts/1/comentar', { texto: 'Comentário repetido não soma pontos de novo' });
+  // Comentar direto pelo feed volta para o post no feed, e o comentário aparece lá.
+  assert.equal((await bruno.post('/posts/2/comentar', { texto: 'Que vista!', voltar: '/' })).local, '/#post-2');
+  assert.equal((await bruno.post('/posts/2/comentar', { texto: 'x', voltar: '//site-malicioso.com' })).local, '/#post-2');
+  assert.match((await ana.get('/')).html, /Que vista!/);
   // Curtir o próprio post não dá pontos.
   await ana.post('/posts/1/curtir', { voltar: '/' });
 
@@ -114,11 +122,17 @@ test('fluxo completo', async () => {
   assert.equal((await prof.post('/u/2/medalha', { tipo_id: '1', mensagem: 'Excelente seminário' })).local, '/u/2?ok=medalha');
   assert.equal((await prof.post('/u/4/medalha', { tipo_id: '1' })).status, 400);
 
+  // A medalha e a conquista Medalhista aparecem no feed de todo mundo.
+  const feedBruno = (await bruno.get('/')).html;
+  assert.match(feedBruno, /Ana ganhou <span class="evento-destaque">Excelência acadêmica/);
+  assert.match(feedBruno, /Excelente seminário/);
+  assert.match(feedBruno, /Ana desbloqueou <span class="evento-destaque">Medalhista/);
+
   // Pontos da Ana: 2 posts (20) + 2 curtidas de outros (4) + medalha Excelência (50)
   //              + conquistas Primeiro clique (20) e Medalhista (20) = 114
-  // Pontos do Bruno: 1 post comentado (3).
+  // Pontos do Bruno: 2 posts comentados (6).
   const ranking = await ana.get('/ranking');
-  assert.match(ranking.html, /Ana Souza[\s\S]*114[\s\S]*Bruno Lima[\s\S]*3 <small>pts/);
+  assert.match(ranking.html, /Ana Souza[\s\S]*114[\s\S]*Bruno Lima[\s\S]*6 <small>pts/);
   const perfil = await ana.get('/u/2');
   assert.match(perfil.html, /114<\/strong><span>pontos/);
   assert.match(perfil.html, /Excelente seminário/);
